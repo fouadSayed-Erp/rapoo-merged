@@ -1,17 +1,52 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Rapoo</title><link rel="stylesheet" href="style.css"></head><body>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Rapoo v2 Ultimate</title><link rel="stylesheet" href="style.css"></head><body>
 <div class="keyboard-container">
-<div class="header"><div class="dots"><span></span><span></span><span></span></div><div class="title">RAPOO • MERGED v1.4</div></div>
-<div class="keyboard" id="keyboard">
-<div class="row"><div class="key small" data-key="esc">esc</div><div class="key" data-key="F1">F1</div><div class="key" data-key="F2">F2</div><div class="key" data-key="F3">F3</div><div class="key" data-key="F4">F4</div><div class="key" data-key="F5">F5</div><div class="key" data-key="F6">F6</div><div class="key" data-key="F7">F7</div><div class="key" data-key="F8">F8</div><div class="key" data-key="F9">F9</div><div class="key" data-key="F10">F10</div><div class="key" data-key="F11">F11</div><div class="key" data-key="F12">F12</div></div>
-<div class="row"><div class="key small" data-key="`">`</div><div class="key" data-key="1">1</div><div class="key" data-key="2">2</div><div class="key" data-key="3">3</div><div class="key" data-key="4">4</div><div class="key" data-key="5">5</div><div class="key" data-key="6">6</div><div class="key" data-key="7">7</div><div class="key" data-key="8">8</div><div class="key" data-key="9">9</div><div class="key" data-key="0">0</div><div class="key" data-key="-">-</div><div class="key" data-key="=">=</div><div class="key del" data-key="Backspace">⌫</div></div>
-<div class="row"><div class="key fn-key small" data-key="tab">tab</div><div class="key" data-key="q">Q</div><div class="key" data-key="w">W</div><div class="key" data-key="e">E</div><div class="key" data-key="r">R</div><div class="key" data-key="t">T</div><div class="key" data-key="y">Y</div><div class="key" data-key="u">U</div><div class="key" data-key="i">I</div><div class="key" data-key="o">O</div><div class="key" data-key="p">P</div><div class="key" data-key="[">[</div><div class="key" data-key="]">]</div><div class="key" data-key="\" data-key-alt="\">\</div></div>
-<div class="row"><div class="key fn-key small" data-key="caps" id="capsKey">caps</div><div class="key" data-key="a">A</div><div class="key" data-key="s">S</div><div class="key" data-key="d">D</div><div class="key" data-key="f">F</div><div class="key" data-key="g">G</div><div class="key" data-key="h">H</div><div class="key" data-key="j">J</div><div class="key" data-key="k">K</div><div class="key" data-key="l">L</div><div class="key" data-key=";">;</div><div class="key" data-key="'">'</div><div class="key small" data-key="enter">↵</div></div>
-<div class="row"><div class="key fn-key small" data-key="shift" id="shiftKey">shift</div><div class="key" data-key="z">Z</div><div class="key" data-key="x">X</div><div class="key" data-key="c">C</div><div class="key" data-key="v">V</div><div class="key" data-key="b">B</div><div class="key" data-key="n">N</div><div class="key" data-key="m">M</div><div class="key" data-key=",">,</div><div class="key" data-key=".">.</div><div class="key" data-key="/">/</div><div class="key fn-key small" data-key="shift" id="shiftKey2">shift</div></div>
-<div class="row bottom-row"><div class="key fn-trackpad" id="fnKey" data-key="fn"><span>Fn</span><small>TP</small></div><div class="key fn-key small" data-key="ctrl" id="ctrlKey">ctrl</div><div class="key fn-key small" data-key="alt" id="altKey">alt</div><div class="key space-trackpad" id="spaceTrackpad"><div class="space-content"><span>SPACE</span><span>/</span><span>TRACKPAD</span><div class="track-icon">▣</div></div><div class="space-hint">HOLD 400ms • SLIDE للتحريك • 32% SAVED</div><div class="trackpad-grid" id="trackpadGrid"></div><div class="track-dot" id="trackDot"></div></div><div class="key fn-key small" data-key="alt">alt</div><div class="key fn-key small" data-key="ctrl">ctrl</div><div class="key" data-key="arrowleft">←</div><div class="key" data-key="arrowupdown">↑↓</div><div class="key" data-key="arrowright">→</div></div>
+<div class="header"><div class="dots"><span></span><span></span><span></span></div><div class="title">RAPOO • MERGED v2.0 <span class="settings-btn" id="settingsBtn">⚙️</span></div><div class="lang-indicator" id="langIndicator">EN</div></div>
+<div class="keyboard" id="keyboard"></div>
+<div class="footer"><div class="saved"><div class="bar"></div><span>32% SAVED • 86mm</span></div><div class="version"><span class="green-dot"></span><span id="versionText">ULTIMATE RGB</span></div></div>
+<div class="overlay" id="overlay"><div class="overlay-text">TRACKPAD ACTIVE<br><small style="font-size:10px;color:#8b5cf6">حرك صباعك</small></div></div>
+
+<div class="settings-panel" id="settingsPanel">
+<div class="settings-header"><span class="settings-title">⚙️ إعدادات Rapoo Ultimate</span><button class="close-settings" id="closeSettings">✕</button></div>
+
+<div class="setting-group"><span class="setting-label">🌐 اللغة - Language</span><div class="setting-options" id="langOptions">
+<button class="option-btn" data-lang="en">EN English</button>
+<button class="option-btn" data-lang="ar">AR عربي</button>
+<button class="option-btn" data-lang="fr">FR Français</button>
+<button class="option-btn" data-lang="de">DE Deutsch</button>
+</div></div>
+
+<div class="setting-group"><span class="setting-label">🎨 الثيمات - Themes</span><div class="setting-options" id="themeOptions">
+<button class="option-btn" data-theme="dark">Dark</button>
+<button class="option-btn" data-theme="light">Light</button>
+<button class="option-btn" data-theme="amoled">Amoled</button>
+<button class="option-btn" data-theme="neon">Neon Cyan</button>
+<button class="option-btn" data-theme="rgb_wave">RGB Wave</button>
+<button class="option-btn" data-theme="rapoo_purple">Rapoo Purple</button>
+</div></div>
+
+<div class="setting-group"><span class="setting-label">🔊 صوت الزراير - Mechanical Sounds</span><div class="setting-options" id="soundOptions">
+<button class="option-btn" data-sound="off">🔇 Off</button>
+<button class="option-btn" data-sound="clicky">Clicky Blue</button>
+<button class="option-btn" data-sound="thocky">Thocky Creamy</button>
+<button class="option-btn" data-sound="linear">Linear Red</button>
+<button class="option-btn" data-sound="typewriter">Typewriter</button>
+</div></div>
+
+<div class="setting-group"><span class="setting-label">🌈 RGB - تفاعل الألوان</span><div class="setting-options" id="rgbOptions">
+<button class="option-btn" data-rgb="off">Off</button>
+<button class="option-btn" data-rgb="reactive">Reactive - يتفاعل مع الدوسة</button>
+<button class="option-btn" data-rgb="wave">Wave - موجة مستمرة</button>
+<button class="option-btn" data-rgb="breathing">Breathing - تنفس</button>
+<button class="option-btn" data-rgb="rainbow">Rainbow Border</button>
+</div></div>
+
+<div class="setting-group"><span class="setting-label">⚡ إضافات</span><div class="setting-options">
+<button class="option-btn" id="vibToggle">📳 اهتزاز: مفعل</button>
+<button class="option-btn" id="resetBtn">🔄 إعادة ضبط</button>
+</div></div>
+
 </div>
-<div class="footer"><div class="saved"><div class="bar"></div><span>32% SAVED • 86mm</span></div><div class="version"><span class="green-dot"></span>MERGED v1.4 ALL KEYS FIXED</div></div>
-<div class="overlay" id="overlay"><div class="overlay-text">TRACKPAD ACTIVE<br><small style="font-size:10px;color:#8b5cf6">حرك صباعك يمين وشمال للتحكم في المؤشر</small></div></div>
 </div>
 <script src="app.js"></script>
 </body></html>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="24dp" android:background="#0a0a0a" android:gravity="center">
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="RAPOO • MERGED v1.0" android:textColor="#8b5cf6" android:textSize="18sp" android:layout_marginBottom="32dp"/>
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="32% SAVED • 86mm\nSPACE / TRACKPAD merged" android:textColor="#9ca3af" android:gravity="center" android:layout_marginBottom="32dp"/>
+    <Button android:id="@+id/btnEnable" android:layout_width="match_parent" android:layout_height="56dp" android:text="1- تفعيل الكيبورد" android:backgroundTint="#8b5cf6" android:layout_marginBottom="16dp"/>
+    <Button android:id="@+id/btnPick" android:layout_width="match_parent" android:layout_height="56dp" android:text="2- اختيار ككيبورد أساسي" android:backgroundTint="#3a3e41"/>
+</LinearLayout>

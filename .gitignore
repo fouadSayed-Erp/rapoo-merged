@@ -4,4 +4,6 @@ app/build/
 android-sdk/
 local.properties
 *.apk
+.gradle
 storage/
+.idea/

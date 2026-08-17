@@ -1,32 +1,30 @@
-// v2.3 FAST & BIG - Fast typing without errors + Bigger keys + Faster RGB
+// v2.5 ULTRA FIX - Perfect Grid + Delete No Stuck + Fast Typing
 const keyboardEl=document.getElementById('keyboard'),suggestionBar=document.getElementById('suggestionBar'),langIndicator=document.getElementById('langIndicator'),versionText=document.getElementById('versionText'),miniToast=document.getElementById('miniToast');
 let isShift=false,isCaps=false,isAlt=false,isCtrl=false,isTrackpadActive=false,isFullTrackpad=false,holdTimer=null,lastMoveX=0,startX=0,startY=0;
 let currentLang='en',currentTheme='dark',currentSound='clicky',currentRGB='reactive',vibEnabled=true,soundEnabled=true,autocorrectEnabled=true,suggestEnabled=true;
 let currentWord='',sentenceBuffer='',lastTapTime=0,lastTapKey='';
-let keyQueue=[],isProcessingQueue=false;
 
 const dictionaries={
-  en:{words:["the","be","to","of","and","a","in","that","have","i","it","for","not","on","with","he","as","you","do","at","this","but","his","by","from","they","we","say","her","she","or","an","will","my","one","all","would","there","their","what","so","up","out","if","about","who","get","which","go","me","when","make","can","like","time","no","just","him","know","take","people","into","year","your","good","some","could","them","see","other","than","then","now","look","only","come","its","over","think","also","back","after","use","two","how","our","work","first","well","way","even","new","want","because","any","these","give","day","most","us","hello","world","keyboard","android","google","rapoo","merged","space","trackpad","fast","big","optimized","quick","smooth","rgb","ultimate","thanks","please","sorry","today","tomorrow","yesterday","morning","night","good","great","awesome","love","happy","sad","fast","typing","error","correct","sentence","suggestion","quickly","speed","rapid","performance"],
-  words_ar:["السلام","عليكم","مرحبا","كيف","حالك","انا","انت","هو","هي","نحن","هذا","هذه","ذلك","في","من","الى","على","عن","مع","بعد","قبل","كتاب","قلم","بيت","مدرسة","عمل","وقت","يوم","سنة","موبايل","كيبورد","مسافة","تراك","باد","اعدادات","لغة","ثيم","صوت","الوان","شكرا","حبيبي","تمام","ظبط","الله","محمد","مصر","عربي","صباح","الخير","مساء","حلو","جميل","بحبك","وحشتيني","عامل","ايه","اخبارك","كويس","الحمدلله","سريع","كبير","محسن","ممتاز"]},
-  ar:{words:["السلام","عليكم","مرحبا","كيف","حالك","انا","انت","هو","هي","نحن","هذا","هذه","ذلك","في","من","الى","على","عن","مع","بعد","قبل","كتاب","قلم","بيت","مدرسة","عمل","وقت","يوم","سنة","موبايل","كيبورد","مسافة","تراك","باد","اعدادات","لغة","ثيم","صوت","الوان","شكرا","حبيبي","تمام","ظبط","الله","محمد","مصر","عربي","صباح","الخير","مساء","حلو","جميل","بحبك","وحشتيني","عامل","ايه","اخبارك","كويس","الحمدلله","سريع","كبير","محسن"]}
+  en:{words:["the","be","to","of","and","a","in","that","have","i","it","for","not","on","with","he","as","you","do","at","this","but","his","by","from","they","we","say","her","she","or","an","will","my","one","all","would","there","their","what","so","up","out","if","about","who","get","which","go","me","when","make","can","like","time","no","just","him","know","take","people","into","year","your","good","some","could","them","see","other","than","then","now","look","only","come","its","over","think","also","back","after","use","two","how","our","work","first","well","way","even","new","want","because","any","these","give","day","most","us","hello","world","keyboard","fast","typing","error","big","consistent"],sentences:{"hello":"Hello there!","how are you":"How are you doing?","teh":"the","adn":"and"}},
+  ar:{words:["السلام","عليكم","مرحبا","كيف","حالك","انا","انت","هو","هي","نحن","هذا","هذه","ذلك","في","من","الى","على","عن","مع","بعد","قبل","كتاب","قلم","بيت","مدرسة","عمل","وقت","يوم","سنة","موبايل","كيبورد","مسافة","تراك","باد","اعدادات","لغة","ثيم","صوت","الوان","شكرا","حبيبي","تمام","ظبط","الله","محمد","مصر","عربي","سريع","كبير","متناسق"],sentences:{"السلام عليكم":"السلام عليكم ورحمة الله وبركاته","صباح الخير":"صباح الخير يا حبيبي"}}
 };
-Object.assign(dictionaries.en, {sentences:{"hello":"Hello there!","how are you":"How are you doing?","thank you":"Thank you so much!","good morning":"Good morning! Have a great day!","teh":"the","adn":"and","becuase":"because","recieve":"receive","seperate":"separate","fast typing":"fast typing without errors","quick brown":"The quick brown fox jumps over the lazy dog"}});
-Object.assign(dictionaries.ar, {sentences:{"السلام عليكم":"السلام عليكم ورحمة الله وبركاته","صباح الخير":"صباح الخير يا حبيبي","مساء الخير":"مساء الخير يا جميل","عامل ايه":"عامل ايه يا غالي؟","شكرا":"شكرا جزيلا","تمام":"تمام ظبط كده","الله":"الله اكبر"}});
 
 const layouts={
   en:{
-    row1:[{k:'`',s:'~'},{k:'1',s:'!'},{k:'2',s:'@'},{k:'3',s:'#'},{k:'4',s:'$'},{k:'5',s:'%'},{k:'6',s:'^'},{k:'7',s:'&'},{k:'8',s:'*'},{k:'9',s:'('},{k:'0',s:')'},{k:'-',s:'_'},{k:'=',s:'+'},{k:'Backspace',d:'⌫',c:'del',id:'delKey'}],
-    row2:[{k:'tab',d:'tab',c:'fn-key small'},{k:'q'},{k:'w'},{k:'e'},{k:'r'},{k:'t'},{k:'y'},{k:'u'},{k:'i'},{k:'o'},{k:'p'},{k:'[',s:'{'},{k:']',s:'}'},{k:'\\',s:'|'}],
-    row3:[{k:'caps',d:'caps',c:'fn-key small',id:'capsKey'},{k:'a'},{k:'s'},{k:'d'},{k:'f'},{k:'g'},{k:'h'},{k:'j'},{k:'k'},{k:'l'},{k:';',s:':'},{k:"'",s:'"'},{k:'enter',d:'↵',c:'small'}],
-    row4:[{k:'shift',d:'shift',c:'fn-key small',id:'shiftKey'},{k:'z'},{k:'x'},{k:'c'},{k:'v'},{k:'b'},{k:'n'},{k:'m'},{k:',',s:'<'},{k:'.',s:'>'},{k:'/',s:'?'},{k:'shift',d:'shift',c:'fn-key small',id:'shiftKey2'}],
-    row5:[{k:'fn',d:'Fn',id:'fnKey'},{k:'ctrl',d:'ctrl',id:'ctrlKey'},{k:'alt',d:'alt',id:'altKey'},{k:'space',d:'SPACE',c:'space-trackpad',id:'spaceTrackpad',special:true},{k:'alt',d:'alt'},{k:'ctrl',d:'ctrl'},{k:'arrowleft',d:'←'},{k:'arrowupdown',d:'↑↓'},{k:'arrowright',d:'→'}]
+    f:[{k:'esc',d:'esc',c:'small'},{k:'F1'},{k:'F2'},{k:'F3'},{k:'F4'},{k:'F5'},{k:'F6'},{k:'F7'},{k:'F8'},{k:'F9'},{k:'F10'},{k:'F11'},{k:'F12'}],
+    n:[{k:'`',d:'`'},{k:'1'},{k:'2'},{k:'3'},{k:'4'},{k:'5'},{k:'6'},{k:'7'},{k:'8'},{k:'9'},{k:'0'},{k:'-',d:'-'},{k:'=',d:'='},{k:'Backspace',d:'⌫',c:'del',id:'delKey'}],
+    q:[{k:'tab',d:'tab',c:'fn-key small'},{k:'q'},{k:'w'},{k:'e'},{k:'r'},{k:'t'},{k:'y'},{k:'u'},{k:'i'},{k:'o'},{k:'p'},{k:'[',d:'['},{k:']',d:']'},{k:'\\',d:'\\'}],
+    a:[{k:'caps',d:'caps',c:'fn-key small',id:'capsKey'},{k:'a'},{k:'s'},{k:'d'},{k:'f'},{k:'g'},{k:'h'},{k:'j'},{k:'k'},{k:'l'},{k:';',d:';'},{k:"'",d:"'"},{k:'enter',d:'↵',c:'small'}],
+    z:[{k:'shift',d:'shift',c:'fn-key small',id:'shiftKey'},{k:'z'},{k:'x'},{k:'c'},{k:'v'},{k:'b'},{k:'n'},{k:'m'},{k:',',d:','},{k:'.',d:'.'},{k:'/',d:'/'},{k:'shift',d:'shift',c:'fn-key small',id:'shiftKey2'}],
+    b:[{k:'fn',d:'fn',id:'fnKey'},{k:'ctrl',d:'ctrl',id:'ctrlKey'},{k:'alt',d:'alt',id:'altKey'},{k:'space',d:'SPACE',c:'space-trackpad',id:'spaceTrackpad',special:true},{k:'alt',d:'alt'},{k:'ctrl',d:'ctrl'},{k:'arrowleft',d:'←'},{k:'arrowupdown',d:'↑↓'},{k:'arrowright',d:'→'}]
   },
   ar:{
-    row1:[{k:'`',s:'~'},{k:'1',s:'!'},{k:'2',s:'@'},{k:'3',s:'#'},{k:'4',s:'$'},{k:'5',s:'%'},{k:'6',s:'^'},{k:'7',s:'&'},{k:'8',s:'*'},{k:'9',s:'('},{k:'0',s:')'},{k:'-',s:'_'},{k:'=',s:'+'},{k:'Backspace',d:'⌫',c:'del',id:'delKey'}],
-    row2:[{k:'tab',d:'tab',c:'fn-key small'},{k:'ض'},{k:'ص'},{k:'ث'},{k:'ق'},{k:'ف'},{k:'غ'},{k:'ع'},{k:'ه'},{k:'خ'},{k:'ح'},{k:'ج'},{k:'د'},{k:'\\',s:'|'}],
-    row3:[{k:'caps',d:'caps',c:'fn-key small',id:'capsKey'},{k:'ش'},{k:'س'},{k:'ي'},{k:'ب'},{k:'ل'},{k:'ا'},{k:'ت'},{k:'ن'},{k:'م'},{k:'ك'},{k:'ط'},{k:'enter',d:'↵',c:'small'}],
-    row4:[{k:'shift',d:'shift',c:'fn-key small',id:'shiftKey'},{k:'ئ'},{k:'ء'},{k:'ؤ'},{k:'ر'},{k:'لا'},{k:'ى'},{k:'ة'},{k:'و'},{k:'ز'},{k:'ظ'},{k:'shift',d:'shift',c:'fn-key small',id:'shiftKey2'}],
-    row5:[{k:'fn',d:'Fn',id:'fnKey'},{k:'ctrl',d:'ctrl',id:'ctrlKey'},{k:'alt',d:'alt',id:'altKey'},{k:'space',d:'مسافة',c:'space-trackpad',id:'spaceTrackpad',special:true},{k:'alt',d:'alt'},{k:'ctrl',d:'ctrl'},{k:'arrowleft',d:'←'},{k:'arrowupdown',d:'↑↓'},{k:'arrowright',d:'→'}]
+    f:[{k:'esc',d:'esc',c:'small'},{k:'F1'},{k:'F2'},{k:'F3'},{k:'F4'},{k:'F5'},{k:'F6'},{k:'F7'},{k:'F8'},{k:'F9'},{k:'F10'},{k:'F11'},{k:'F12'}],
+    n:[{k:'`',d:'`'},{k:'1'},{k:'2'},{k:'3'},{k:'4'},{k:'5'},{k:'6'},{k:'7'},{k:'8'},{k:'9'},{k:'0'},{k:'-',d:'-'},{k:'=',d:'='},{k:'Backspace',d:'⌫',c:'del',id:'delKey'}],
+    q:[{k:'tab',d:'tab',c:'fn-key small'},{k:'ض'},{k:'ص'},{k:'ث'},{k:'ق'},{k:'ف'},{k:'غ'},{k:'ع'},{k:'ه'},{k:'خ'},{k:'ح'},{k:'ج'},{k:'د'},{k:'\\',d:'\\'}],
+    a:[{k:'caps',d:'caps',c:'fn-key small',id:'capsKey'},{k:'ش'},{k:'س'},{k:'ي'},{k:'ب'},{k:'ل'},{k:'ا'},{k:'ت'},{k:'ن'},{k:'م'},{k:'ك'},{k:'ط'},{k:'enter',d:'↵',c:'small'}],
+    z:[{k:'shift',d:'shift',c:'fn-key small',id:'shiftKey'},{k:'ئ'},{k:'ء'},{k:'ؤ'},{k:'ر'},{k:'لا'},{k:'ى'},{k:'ة'},{k:'و'},{k:'ز'},{k:'ظ'},{k:'shift',d:'shift',c:'fn-key small',id:'shiftKey2'}],
+    b:[{k:'fn',d:'fn',id:'fnKey'},{k:'ctrl',d:'ctrl',id:'ctrlKey'},{k:'alt',d:'alt',id:'altKey'},{k:'space',d:'مسافة',c:'space-trackpad',id:'spaceTrackpad',special:true},{k:'alt',d:'alt'},{k:'ctrl',d:'ctrl'},{k:'arrowleft',d:'←'},{k:'arrowupdown',d:'↑↓'},{k:'arrowright',d:'→'}]
   }
 };
 Object.assign(layouts,{fr:layouts.en,de:layouts.en});
@@ -34,15 +32,7 @@ const KC={F1:131,F2:132,F3:133,F4:134,F5:135,F6:136,F7:137,F8:138,F9:139,F10:140
 
 let audioCtx=null;
 function getCtx(){ if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
-function playSound(){
-  if(!soundEnabled||currentSound==='off') return;
-  try{
-    const ctx=getCtx(),now=ctx.currentTime;
-    const g=ctx.createGain(); g.gain.setValueAtTime(0.22,now); g.gain.exponentialRampToValueAtTime(0.01,now+0.07);
-    const o=ctx.createOscillator(); o.type=currentSound==='thocky'?'sine':'square'; o.frequency.setValueAtTime(currentSound==='thocky'?110:3000,now);
-    o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now+0.07);
-  }catch(e){}
-}
+function playSound(){ if(!soundEnabled||currentSound==='off') return; try{ const ctx=getCtx(),now=ctx.currentTime; const g=ctx.createGain(); g.gain.setValueAtTime(0.2,now); g.gain.exponentialRampToValueAtTime(0.01,now+0.06); const o=ctx.createOscillator(); o.type='square'; o.frequency.setValueAtTime(3000,now); o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now+0.06); }catch(e){} }
 function commit(t){ if(window.Android&&Android.commitText) Android.commitText(t); }
 function del(){ if(window.Android&&Android.deleteText) Android.deleteText(); }
 function delN(n){ if(window.Android&&Android.deleteN) Android.deleteN(n); }
@@ -50,128 +40,102 @@ function sendKeyMod(c,s,ctrl,alt){ if(window.Android&&Android.sendKeyWithModifie
 function moveCursor(dx){ if(window.Android&&Android.moveCursor) Android.moveCursor(dx); }
 function saveSet(k,v){ try{ localStorage.setItem('rapoo_'+k,v); if(window.Android&&Android.saveSetting) Android.saveSetting(k,v);}catch(e){} }
 function loadSet(k,d){ try{ const v=localStorage.getItem('rapoo_'+k); if(v!==null) return v; if(window.Android&&Android.getSetting){const av=Android.getSetting(k,d); if(av) return av;}}catch(e){} return d; }
-function vibrate(){ if(!vibEnabled) return; try{if(navigator.vibrate) navigator.vibrate(6)}catch(e){} }
-function showToast(msg){ miniToast.textContent=msg; miniToast.classList.add('show'); setTimeout(()=>miniToast.classList.remove('show'),1300); }
-
+function vibrate(){ if(!vibEnabled) return; try{if(navigator.vibrate) navigator.vibrate(5)}catch(e){} }
+function showToast(msg){ miniToast.textContent=msg; miniToast.classList.add('show'); setTimeout(()=>miniToast.classList.remove('show'),1200); }
 function levenshtein(a,b){ const m=[]; for(let i=0;i<=b.length;i++){m[i]=[i]} for(let j=0;j<=a.length;j++){m[0][j]=j} for(let i=1;i<=b.length;i++){for(let j=1;j<=a.length;j++){if(b.charAt(i-1)==a.charAt(j-1)) m[i][j]=m[i-1][j-1]; else m[i][j]=Math.min(m[i-1][j-1]+1,Math.min(m[i][j-1]+1,m[i-1][j]+1))}} return m[b.length][a.length]; }
-
-function getSuggestions(word,sentence){
-  if(!suggestEnabled||!word) return {words:[],sentences:[]};
-  const dict=dictionaries[currentLang]||dictionaries.en;
-  const lower=word.toLowerCase();
-  const senLower=(sentence||'').toLowerCase().trim();
-  let wordSugs=[],sentenceSugs=[];
-  if(dict.sentences){
-    for(let k in dict.sentences){ if(senLower.endsWith(k.toLowerCase()) || k.toLowerCase().includes(lower)){ sentenceSugs.push({text:dict.sentences[k],orig:k}); } }
-    if(dict.sentences[senLower]) sentenceSugs.unshift({text:dict.sentences[senLower],orig:senLower});
-  }
-  dict.words.forEach(w=>{ if(w.toLowerCase().startsWith(lower)&&w.toLowerCase()!==lower) wordSugs.push({word:w,score:0}); });
-  if(wordSugs.length<4){ dict.words.forEach(w=>{ const d=levenshtein(lower,w.toLowerCase()); if(d<=2&&d>0) wordSugs.push({word:w,score:d}); }); }
-  wordSugs.sort((a,b)=>a.score-b.score);
-  const uniq=[]; const seen=new Set(); for(let r of wordSugs){ if(!seen.has(r.word.toLowerCase())){seen.add(r.word.toLowerCase()); uniq.push(r.word);} if(uniq.length>=4) break; }
-  return {words:uniq, sentences:sentenceSugs.slice(0,2)};
-}
-
-function updateSuggestions(){
-  if(!suggestEnabled){ suggestionBar.innerHTML='<div class="suggestion" style="opacity:.3">مطفية</div>'; return; }
-  if(!currentWord && !sentenceBuffer){ suggestionBar.innerHTML='<div class="suggestion" style="opacity:.4">ابدأ الكتابة...</div>'; return; }
-  const fullSentence=(sentenceBuffer+' '+currentWord).trim();
-  const sugs=getSuggestions(currentWord,fullSentence);
-  let html=''; if(currentWord) html+=`<div class="suggestion active">${currentWord}</div>`;
-  sugs.sentences.forEach(s=>{ html+=`<div class="suggestion sentence" data-suggest="${s.text}" data-is-sentence="1">✨ ${s.text}</div>`; });
-  sugs.words.forEach(w=>{ const isCorr=w.toLowerCase()!==currentWord.toLowerCase(); html+=`<div class="suggestion ${isCorr?'correction':''}" data-suggest="${w}"> ${w}</div>`; });
-  if(!html) html='<div class="suggestion" style="opacity:.5">لا يوجد</div>';
-  suggestionBar.innerHTML=html;
-  suggestionBar.querySelectorAll('[data-suggest]').forEach(el=>{ el.addEventListener('click',()=>{ const sug=el.dataset.suggest; const isSen=el.dataset.isSentence==='1'; applySuggestion(sug,isSen); }); });
-}
-
-function applySuggestion(sug,isSentence){
-  const len=isSentence?(sentenceBuffer+' '+currentWord).trim().length:currentWord.length;
-  if(len>0) delN(len);
-  setTimeout(()=>{ commit(sug+' '); currentWord=''; if(isSentence) sentenceBuffer=''; else sentenceBuffer+=(sentenceBuffer?' ':'')+sug; if(sentenceBuffer.split(' ').length>6) sentenceBuffer=''; updateSuggestions(); playSound(); showToast('✓ '+sug); },35);
-}
-
-function onCharTyped(ch){
-  if(/[a-zA-Z\u0600-\u06FF0-9]/.test(ch)){ currentWord+=ch; sentenceBuffer+=ch; } else if(ch===' '){ currentWord=''; sentenceBuffer+=' '; if(sentenceBuffer.length>100) sentenceBuffer=sentenceBuffer.slice(-60); } else if(/[\n.,!?;:]/.test(ch)){ currentWord=''; sentenceBuffer+=ch; }
-  updateSuggestions();
-}
+function getSuggestions(word){ if(!suggestEnabled||!word||word.length<2) return []; const dict=(dictionaries[currentLang]||dictionaries.en).words||[]; const lower=word.toLowerCase(); let res=[]; dict.forEach(w=>{ if(w.toLowerCase().startsWith(lower)&&w.toLowerCase()!==lower) res.push({w,sc:0}); }); if(res.length<4){ dict.forEach(w=>{ const d=levenshtein(lower,w.toLowerCase()); if(d<=2&&d>0) res.push({w,sc:d}); }); } res.sort((a,b)=>a.sc-b.sc); const u=[]; const seen=new Set(); for(let r of res){ if(!seen.has(r.w.toLowerCase())){seen.add(r.w.toLowerCase()); u.push(r.w);} if(u.length>=4) break; } return u; }
+function updateSuggestions(){ if(!suggestEnabled||!currentWord){ suggestionBar.innerHTML='<div class="suggestion" style="opacity:.4">ابدأ الكتابة...</div>'; return; } const sugs=getSuggestions(currentWord); let h=`<div class="suggestion active">${currentWord}</div>`; sugs.forEach(w=>{ h+=`<div class="suggestion ${w.toLowerCase()!==currentWord.toLowerCase()?'correction':''}" data-s="${w}">${w}</div>`; }); suggestionBar.innerHTML=h; suggestionBar.querySelectorAll('[data-s]').forEach(el=>{ el.addEventListener('click',()=>{ const sug=el.dataset.s; const len=currentWord.length; if(len>0) delN(len); setTimeout(()=>{ commit(sug+' '); currentWord=''; sentenceBuffer=''; updateSuggestions(); playSound(); showToast('✓ '+sug); },30); }); }); }
+function onCharTyped(ch){ if(/[a-zA-Z\u0600-\u06FF0-9]/.test(ch)){ currentWord+=ch; sentenceBuffer+=ch; } else { currentWord=''; sentenceBuffer+=' '; if(sentenceBuffer.length>80) sentenceBuffer=sentenceBuffer.slice(-50); } updateSuggestions(); }
 function onDelete(){ if(currentWord.length>0) currentWord=currentWord.slice(0,-1); if(sentenceBuffer.length>0) sentenceBuffer=sentenceBuffer.slice(0,-1); updateSuggestions(); }
-
-function triggerRGBWave(centerEl){
-  if(currentRGB==='off') return;
-  const allKeys=[...document.querySelectorAll('.key:not(.space-trackpad)')];
-  const idx=allKeys.indexOf(centerEl); if(idx===-1) return;
-  allKeys.forEach((k,i)=>{ const dist=Math.abs(i-idx); if(dist<=4){ setTimeout(()=>{ k.classList.add('rgb-wave'); setTimeout(()=>k.classList.remove('rgb-wave'),350); },dist*35); } });
-}
-
+function triggerRGBWave(el){ if(currentRGB==='off') return; const all=[...document.querySelectorAll('.key:not(.space-trackpad)')]; const idx=all.indexOf(el); if(idx===-1) return; all.forEach((k,i)=>{ const d=Math.abs(i-idx); if(d<=3){ setTimeout(()=>{ k.classList.add('rgb-wave'); setTimeout(()=>k.classList.remove('rgb-wave'),320); },d*30); } }); }
 function renderKeyboard(){
   const layout=layouts[currentLang]||layouts.en;
-  const escRow=`<div class="row"><div class="key small" data-key="esc">esc</div><div class="key" data-key="F1">F1</div><div class="key" data-key="F2">F2</div><div class="key" data-key="F3">F3</div><div class="key" data-key="F4">F4</div><div class="key" data-key="F5">F5</div><div class="key" data-key="F6">F6</div><div class="key" data-key="F7">F7</div><div class="key" data-key="F8">F8</div><div class="key" data-key="F9">F9</div><div class="key" data-key="F10">F10</div><div class="key" data-key="F11">F11</div><div class="key" data-key="F12">F12</div></div>`;
-  let html=escRow;
-  ['row1','row2','row3','row4','row5'].forEach(rn=>{
-    const row=layout[rn]; if(!row) return;
-    html+=`<div class="row ${rn==='row5'?'bottom-row':''}">`;
+  let html='';
+  const rows=[{k:'f',cls:'row-f'},{k:'n',cls:'row-n'},{k:'q',cls:'row-q'},{k:'a',cls:'row-a'},{k:'z',cls:'row-z'},{k:'b',cls:'row-b'}];
+  rows.forEach(r=>{
+    const row=layout[r.k]; if(!row) return;
+    html+=`<div class="row ${r.cls} ${r.k==='b'?'bottom-row':''}">`;
     row.forEach(item=>{
-      if(item.special){ html+=`<div class="key ${item.c||''}" id="${item.id||''}" data-key="${item.k}"><div class="space-content"><span>${item.d}</span><div class="track-icon">▣</div></div><div class="space-hint">HOLD • ${currentLang==='ar'?'اسحب':'SLIDE'} • 32%</div><div class="trackpad-grid" id="trackpadGrid"></div><div class="track-dot" id="trackDot"></div></div>`; }
-      else{ const display=item.d||item.k; const cls=item.c||''; const id=item.id?` id="${item.id}"`:''; const sh=item.s?` data-shift="${item.s}"`:''; html+=`<div class="key ${cls}"${id} data-key="${item.k}"${sh}>${display}</div>`; }
+      if(item.special){ html+=`<div class="key ${item.c||''}" id="${item.id||''}" data-key="${item.k}"><div class="space-content"><span>${item.d}</span><div class="track-icon">▣</div></div><div class="space-hint">HOLD • SLIDE • 32%</div><div class="trackpad-grid" id="trackpadGrid"></div><div class="track-dot" id="trackDot"></div></div>`; }
+      else{ const disp=item.d||item.k; const cls=item.c||''; const id=item.id?` id="${item.id}"`:''; const sh=item.s?` data-shift="${item.s}"`:''; html+=`<div class="key ${cls}"${id} data-key="${item.k}"${sh}>${disp}</div>`; }
     });
     html+=`</div>`;
   });
   keyboardEl.innerHTML=html;
-  attachFastEvents();
+  attachEvents();
   updateUI();
   updateSuggestions();
 }
-
 function updateUI(){
   document.getElementById('capsKey')?.classList.toggle('active', isCaps);
   document.querySelectorAll('#shiftKey,#shiftKey2').forEach(k=>k.classList.toggle('active', isShift));
   document.getElementById('ctrlKey')?.classList.toggle('active', isCtrl);
   document.getElementById('altKey')?.classList.toggle('active', isAlt);
   langIndicator.textContent=currentLang.toUpperCase();
-  versionText.textContent=`FAST • BIG • ${currentTheme.toUpperCase()}`;
+  versionText.textContent=`v2.5 PERFECT`;
   document.body.className=document.body.className.replace(/theme-\S+/g,'');
   document.body.classList.add('theme-'+currentTheme);
 }
 
-// كتابة سريعة بدون أخطاء - Fast typing queue
-let deleteInterval=null,deleteSpeed=100,deleteHoldTimer=null;
-function startFastDelete(){ del(); onDelete(); playSound(); deleteSpeed=100; deleteInterval=setInterval(()=>{ del(); onDelete(); playSound(); if(deleteSpeed>18){ deleteSpeed-=4; clearInterval(deleteInterval); deleteInterval=setInterval(()=>{del(); onDelete();},deleteSpeed); } },deleteSpeed); }
-function stopFastDelete(){ clearInterval(deleteInterval); deleteInterval=null; deleteSpeed=100; clearTimeout(deleteHoldTimer); }
+// حذف سريع بدون تعليق - ULTRA FIX
+let deleteInterval=null,deleteSpeed=100,deleteHoldTimer=null,deleteActive=false;
+function startFastDelete(){
+  if(deleteActive) return;
+  deleteActive=true;
+  del(); onDelete(); playSound();
+  deleteSpeed=110;
+  deleteInterval=setInterval(()=>{
+    del(); onDelete(); playSound();
+    if(deleteSpeed>18){ deleteSpeed=Math.max(18,deleteSpeed-6); clearInterval(deleteInterval); deleteInterval=setInterval(()=>{ del(); onDelete(); },deleteSpeed); }
+  },deleteSpeed);
+}
+function stopFastDelete(){
+  deleteActive=false;
+  clearInterval(deleteInterval); deleteInterval=null;
+  clearTimeout(deleteHoldTimer); deleteHoldTimer=null;
+  deleteSpeed=100;
+  document.querySelectorAll('.key.del').forEach(k=>k.classList.remove('stuck'));
+}
 
-function attachFastEvents(){
-  // منع ghost clicks وتسريع الاستجابة
-  const keys=keyboardEl.querySelectorAll('.key:not(.space-trackpad)');
+function attachEvents(){
+  // تأكد كل الـ intervals تتوقف لو خرجت من الكيبورد
+  window.addEventListener('pointerup',stopFastDelete);
+  window.addEventListener('touchend',stopFastDelete);
+  window.addEventListener('pointercancel',stopFastDelete);
+  document.addEventListener('visibilitychange',stopFastDelete);
+
+  const keys=keyboardEl.querySelectorAll('.key');
   keys.forEach(k=>{
-    let startTime=0,startX=0,startY=0,moved=false;
+    let startX=0,startY=0,startTime=0,moved=false,isDel=k.id==='delKey'||k.dataset.key==='Backspace';
+    
     k.addEventListener('pointerdown',e=>{
       e.preventDefault();
-      startTime=Date.now(); startX=e.clientX; startY=e.clientY; moved=false;
+      startX=e.clientX; startY=e.clientY; startTime=Date.now(); moved=false;
       k.classList.add('pressed');
       if(currentRGB!=='off'){ k.classList.add('rgb-react'); triggerRGBWave(k); }
-      // زر المسح السريع
-      if(k.id==='delKey'||k.dataset.key==='Backspace'){
-        deleteHoldTimer=setTimeout(()=>{ startFastDelete(); },280);
+      if(isDel){
+        // حذف سريع
+        deleteHoldTimer=setTimeout(()=>{ k.classList.add('stuck'); startFastDelete(); },300);
       }
-      k.setPointerCapture(e.pointerId);
     },{passive:false});
-    
+
     k.addEventListener('pointermove',e=>{
-      if(Math.abs(e.clientX-startX)>12||Math.abs(e.clientY-startY)>12){ moved=true; k.classList.remove('pressed'); stopFastDelete(); }
+      if(Math.abs(e.clientX-startX)>10||Math.abs(e.clientY-startY)>10){
+        moved=true; k.classList.remove('pressed'); if(isDel) stopFastDelete();
+      }
     },{passive:false});
-    
-    k.addEventListener('pointerup',e=>{
+
+    const endHandler=(e)=>{
       e.preventDefault();
       k.classList.remove('pressed');
-      stopFastDelete();
-      setTimeout(()=>{ if(currentRGB!=='off') k.classList.remove('rgb-react'); },350);
+      if(isDel) stopFastDelete();
+      setTimeout(()=>{ if(currentRGB!=='off') k.classList.remove('rgb-react'); },320);
       if(moved) return;
-      if(Date.now()-startTime>500) return; // long press handled separately
-      // منع الضغط المزدوج السريع جداً (ghost)
+      if(Date.now()-startTime>500 && !isDel) return;
       const now=Date.now();
-      if(k.dataset.key===lastTapKey && now-lastTapTime<40) return;
+      if(k.dataset.key===lastTapKey && now-lastTapTime<35) return;
       lastTapTime=now; lastTapKey=k.dataset.key;
-      
+
       const key=k.dataset.key; if(!key) return;
       playSound(); vibrate();
       if(key==='shift'){isShift=!isShift;updateUI();return;}
@@ -188,23 +152,14 @@ function attachFastEvents(){
       if(key==='arrowright'){sendKeyMod(KC.RIGHT,isShift,isCtrl,isAlt);return;}
       if(key==='arrowupdown'){sendKeyMod(KC.UP,isShift,isCtrl,isAlt);return;}
       let out=key;
-      if(out.length===1){
-        if(currentLang==='en'&&/[a-z]/.test(out)) out=(isShift||isCaps)?out.toUpperCase():out.toLowerCase();
-        if(isShift&&k.dataset.shift) out=k.dataset.shift;
-      }
-      if(out==='space'){commit(' '); onCharTyped(' ');}
-      else{
-        if(isCtrl||isAlt){const code=KC[out.toUpperCase()]||0; if(code) sendKeyMod(code,isShift,isCtrl,isAlt); else commit(out);}
-        else commit(out);
-        onCharTyped(out);
-      }
+      if(out.length===1){ if(currentLang==='en'&&/[a-z]/.test(out)) out=(isShift||isCaps)?out.toUpperCase():out.toLowerCase(); if(isShift&&k.dataset.shift) out=k.dataset.shift; }
+      if(out==='space'){commit(' '); onCharTyped(' ');} else { if(isCtrl||isAlt){const code=KC[out.toUpperCase()]||0; if(code) sendKeyMod(code,isShift,isCtrl,isAlt); else commit(out);} else commit(out); onCharTyped(out); }
       if(isShift){isShift=false;updateUI();}
-    },{passive:false});
-    
-    k.addEventListener('pointercancel',()=>{ k.classList.remove('pressed'); stopFastDelete(); if(currentRGB!=='off') setTimeout(()=>k.classList.remove('rgb-react'),350); });
+    };
+    k.addEventListener('pointerup',endHandler,{passive:false});
+    k.addEventListener('touchend',endHandler,{passive:false});
   });
 
-  // SPACE TRACKPAD
   const spaceTrackpad=document.getElementById('spaceTrackpad');
   if(!spaceTrackpad) return;
   const trackDot=document.getElementById('trackDot'),trackGrid=document.getElementById('trackpadGrid'),overlay=document.getElementById('overlay');
@@ -224,13 +179,9 @@ document.getElementById('settingsBtn')?.addEventListener('click',()=>document.ge
 document.getElementById('closeSettings')?.addEventListener('click',()=>document.getElementById('settingsPanel').classList.remove('show'));
 document.querySelectorAll('#langOptions .option-btn').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('#langOptions .option-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); currentLang=b.dataset.lang; saveSet('language',currentLang); renderKeyboard(); showToast('🌐 '+currentLang);}));
 document.querySelectorAll('#themeOptions .option-btn').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('#themeOptions .option-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); currentTheme=b.dataset.theme; saveSet('theme',currentTheme); updateUI(); showToast('🎨 '+currentTheme);}));
-document.querySelectorAll('#soundOptions .option-btn').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('#soundOptions .option-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); currentSound=b.dataset.sound; soundEnabled=currentSound!=='off'; saveSet('sound',currentSound); saveSet('sound_enabled',soundEnabled?'true':'false'); if(soundEnabled) playSound(); showToast('🔊 '+currentSound);}));
-document.querySelectorAll('#rgbOptions .option-btn').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('#rgbOptions .option-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); currentRGB=b.dataset.rgb; saveSet('rgb',currentRGB); updateUI(); showToast('🌈 '+currentRGB);}));
 
 currentLang=loadSet('language','en'); currentTheme=loadSet('theme','dark'); currentSound=loadSet('sound','clicky'); currentRGB=loadSet('rgb','reactive'); soundEnabled=loadSet('sound_enabled','true')==='true'; vibEnabled=loadSet('vib','true')==='true';
 document.querySelector(`[data-lang="${currentLang}"]`)?.classList.add('active');
 document.querySelector(`[data-theme="${currentTheme}"]`)?.classList.add('active');
-document.querySelector(`[data-sound="${currentSound}"]`)?.classList.add('active');
-document.querySelector(`[data-rgb="${currentRGB}"]`)?.classList.add('active');
 renderKeyboard();
-console.log('Rapoo v2.3 FAST & BIG - Bigger keys, fast typing queue, 2x faster RGB');
+console.log('Rapoo v2.5 PERFECT FIT - No overlap, delete fixed, fast typing');

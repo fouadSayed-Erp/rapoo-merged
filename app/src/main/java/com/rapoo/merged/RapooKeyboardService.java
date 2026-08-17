@@ -42,7 +42,7 @@ public class RapooKeyboardService extends InputMethodService {
                     @Override public void onRmsChanged(float rmsdB){}
                     @Override public void onBufferReceived(byte[] buffer){}
                     @Override public void onEndOfSpeech(){}
-                    @Override public void onError(int error){ isListening=false; try{ webView.post(()-> webView.evaluateJavascript("window.voiceEnded('خطأ')",null)); }catch(Exception e){} }
+                    @Override public void onError(int error){ isListening=false; try{ webView.post(()-> webView.evaluateJavascript("window.voiceEnded()",null)); }catch(Exception e){} }
                     @Override public void onResults(Bundle results){
                         isListening=false;
                         try{
@@ -63,7 +63,7 @@ public class RapooKeyboardService extends InputMethodService {
     }
     @Override
     public View onCreateInputView(){
-        int h=(int)(410*getResources().getDisplayMetrics().density);
+        int h=(int)(420*getResources().getDisplayMetrics().density);
         LinearLayout c=new LinearLayout(this); c.setOrientation(LinearLayout.VERTICAL); c.setBackgroundColor(Color.parseColor("#15181a"));
         webView=new WebView(this); webView.setBackgroundColor(Color.TRANSPARENT);
         WebSettings s=webView.getSettings(); s.setJavaScriptEnabled(true); s.setDomStorageEnabled(true); s.setAllowFileAccess(true); s.setAllowFileAccessFromFileURLs(true); s.setAllowUniversalAccessFromFileURLs(true); s.setLoadWithOverviewMode(true); s.setUseWideViewPort(true); s.setCacheMode(WebSettings.LOAD_NO_CACHE);
@@ -74,13 +74,11 @@ public class RapooKeyboardService extends InputMethodService {
         return c;
     }
     public class WebAppInterface{
-        // FIX DELETE - يمسح حرف واحد فقط
         @JavascriptInterface public void commitText(String t){ InputConnection ic=getCurrentInputConnection(); if(ic!=null) ic.commitText(t,1); }
         @JavascriptInterface public void deleteText(){ 
             try{
                 InputConnection ic=getCurrentInputConnection(); 
                 if(ic==null) return;
-                // طريقة صحيحة - يمسح حرف واحد فقط
                 ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL));
                 ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL));
             }catch(Exception e){
@@ -91,15 +89,13 @@ public class RapooKeyboardService extends InputMethodService {
             try{ 
                 InputConnection ic=getCurrentInputConnection(); 
                 if(ic==null) return;
-                if(n<=0) n=1;
-                // يمسح N حروف فقط، مش الكل
-                for(int i=0;i<n && i<50;i++){
+                if(n<=0) n=1; if(n>20) n=20;
+                for(int i=0;i<n;i++){
                     ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL));
                     ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL));
                 }
             }catch(Exception e){} 
         }
-        // FIX WINDOWS KEYS - F1-F12 و Esc و Tab و Arrows
         @JavascriptInterface public void sendKeyWithModifiers(int c,boolean s,boolean ctrl,boolean alt){ 
             try{
                 InputConnection ic=getCurrentInputConnection(); 
@@ -108,7 +104,6 @@ public class RapooKeyboardService extends InputMethodService {
                 if(s) m|=KeyEvent.META_SHIFT_ON; 
                 if(ctrl) m|=KeyEvent.META_CTRL_ON; 
                 if(alt) m|=KeyEvent.META_ALT_ON;
-                // F1-F12: 131-142, ESC 111, TAB 61, ENTER 66, etc
                 ic.sendKeyEvent(new KeyEvent(0,0,KeyEvent.ACTION_DOWN,c,0,m)); 
                 ic.sendKeyEvent(new KeyEvent(0,0,KeyEvent.ACTION_UP,c,0,m));
             }catch(Exception e){}
@@ -121,12 +116,10 @@ public class RapooKeyboardService extends InputMethodService {
                 ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, keyCode));
             }catch(Exception e){}
         }
-        // FIX TRACKPAD - يحرك المؤشر حرف حرف
         @JavascriptInterface public void moveCursor(int dx){ 
             try{ 
                 InputConnection ic=getCurrentInputConnection(); 
                 if(ic==null) return; 
-                // طريقة مضمونة 100% - يمين وشمال
                 if(dx>0){
                     ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_RIGHT));
                     ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_RIGHT));
@@ -134,25 +127,12 @@ public class RapooKeyboardService extends InputMethodService {
                     ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_LEFT));
                     ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_LEFT));
                 }
-            }catch(Exception e){
-                try{
-                    InputConnection ic=getCurrentInputConnection(); 
-                    if(ic!=null){
-                        ExtractedTextRequest r=new ExtractedTextRequest(); r.token=0;
-                        ExtractedText et=ic.getExtractedText(r,0);
-                        if(et==null) return;
-                        int p=et.selectionStart+dx;
-                        if(p<0) p=0; 
-                        if(p>et.text.length()) p=et.text.length();
-                        ic.setSelection(p,p);
-                    }
-                }catch(Exception ex){}
-            }
+            }catch(Exception e){}
         }
         @JavascriptInterface public void saveSetting(String k,String v){ prefs.edit().putString(k,v).apply(); }
         @JavascriptInterface public String getSetting(String k,String d){ return prefs.getString(k,d); }
-        @JavascriptInterface public int getBatteryLevel(){ try{ IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED); Intent batteryStatus = registerReceiver(null, ifilter); if(batteryStatus==null) return 73; int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1); int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1); return (int)((level / (float)scale) * 100); }catch(Exception e){ return 73; } }
-        @JavascriptInterface public String getTime(){ try{ SimpleDateFormat sdf = new SimpleDateFormat("h:mm", new Locale("en")); return sdf.format(new Date()); }catch(Exception e){ return "12:41"; } }
+        @JavascriptInterface public int getBatteryLevel(){ try{ IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED); Intent batteryStatus = registerReceiver(null, ifilter); if(batteryStatus==null) return 54; int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1); int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1); return (int)((level / (float)scale) * 100); }catch(Exception e){ return 54; } }
+        @JavascriptInterface public String getTime(){ try{ SimpleDateFormat sdf = new SimpleDateFormat("h:mm", new Locale("en")); return sdf.format(new Date()); }catch(Exception e){ return "2:39"; } }
         @JavascriptInterface public void startVoiceInput(){
             try{
                 if(speechRecognizer!=null && !isListening){

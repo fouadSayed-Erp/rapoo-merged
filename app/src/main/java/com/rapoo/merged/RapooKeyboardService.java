@@ -16,10 +16,6 @@ import android.speech.SpeechRecognizer;
 import android.speech.RecognizerIntent;
 import android.speech.RecognitionListener;
 import android.os.Bundle;
-import android.content.ClipboardManager;
-import android.content.ClipData;
-import android.content.Context;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import org.json.JSONArray;
@@ -28,8 +24,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.ArrayList;
-import androidx.core.content.ContextCompat;
-import android.Manifest;
 public class RapooKeyboardService extends InputMethodService {
     private WebView webView; SharedPreferences prefs;
     private SpeechRecognizer speechRecognizer; private boolean isListening=false;
@@ -84,54 +78,20 @@ public class RapooKeyboardService extends InputMethodService {
         @JavascriptInterface public int getBatteryLevel(){ try{ IntentFilter f=new IntentFilter(Intent.ACTION_BATTERY_CHANGED); Intent b=registerReceiver(null,f); if(b==null) return 73; int l=b.getIntExtra(BatteryManager.EXTRA_LEVEL,-1); int sc=b.getIntExtra(BatteryManager.EXTRA_SCALE,-1); int pl=b.getIntExtra(BatteryManager.EXTRA_PLUGGED,-1); boolean ch=pl==BatteryManager.BATTERY_PLUGGED_AC||pl==BatteryManager.BATTERY_PLUGGED_USB||pl==BatteryManager.BATTERY_PLUGGED_WIRELESS; prefs.edit().putBoolean("isCharging",ch).apply(); return (int)((l/(float)sc)*100); }catch(Exception e){ return 73; } }
         @JavascriptInterface public boolean isCharging(){ try{ IntentFilter f=new IntentFilter(Intent.ACTION_BATTERY_CHANGED); Intent b=registerReceiver(null,f); if(b==null) return false; int pl=b.getIntExtra(BatteryManager.EXTRA_PLUGGED,-1); return pl==BatteryManager.BATTERY_PLUGGED_AC||pl==BatteryManager.BATTERY_PLUGGED_USB||pl==BatteryManager.BATTERY_PLUGGED_WIRELESS; }catch(Exception e){ return false; } }
         @JavascriptInterface public String getTime(){ try{ SimpleDateFormat sdf=new SimpleDateFormat("h:mm a", new Locale("en")); return sdf.format(new Date()); }catch(Exception e){ return "12:41 PM"; } }
-        @JavascriptInterface public boolean hasAudioPermission(){ try{ return ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.RECORD_AUDIO)==PackageManager.PERMISSION_GRANTED; }catch(Exception e){ return false; } }
-        @JavascriptInterface public boolean hasSmsPermission(){ try{ return ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.READ_SMS)==PackageManager.PERMISSION_GRANTED; }catch(Exception e){ return false; } }
-        @JavascriptInterface public void requestPermissions(){
-            try{
-                Intent intent=new Intent(getApplicationContext(), PermissionActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(intent);
-            }catch(Exception e){
-                try{
-                    Intent intent=new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                    intent.setData(Uri.parse("package:"+getPackageName()));
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(intent);
-                }catch(Exception ex){}
-            }
-        }
-        @JavascriptInterface public int getUnreadMessages(){
-            try{
-                if(ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.READ_SMS)!=PackageManager.PERMISSION_GRANTED){ return -1; }
-                Uri uri=Uri.parse("content://sms/inbox"); Cursor c=getContentResolver().query(uri,new String[]{"_id"},"read=0",null,null); if(c==null) return 0; int cnt=c.getCount(); c.close(); return cnt;
-            }catch(Exception e){ return -1; }
-        }
-        @JavascriptInterface public int getTotalMessages(){
-            try{
-                if(ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.READ_SMS)!=PackageManager.PERMISSION_GRANTED){ return -1; }
-                Uri uri=Uri.parse("content://sms/inbox"); Cursor c=getContentResolver().query(uri,new String[]{"_id"},null,null,null); if(c==null) return 0; int cnt=c.getCount(); c.close(); return cnt;
-            }catch(Exception e){ return -1; }
-        }
+        @JavascriptInterface public int getUnreadMessages(){ try{ Uri uri=Uri.parse("content://sms/inbox"); Cursor c=getContentResolver().query(uri,new String[]{"_id"},"read=0",null,null); if(c==null) return 0; int cnt=c.getCount(); c.close(); return cnt; }catch(Exception e){ return -1; } }
+        @JavascriptInterface public int getTotalMessages(){ try{ Uri uri=Uri.parse("content://sms/inbox"); Cursor c=getContentResolver().query(uri,new String[]{"_id"},null,null,null); if(c==null) return 0; int cnt=c.getCount(); c.close(); return cnt; }catch(Exception e){ return -1; } }
         @JavascriptInterface public String getMessagesList(){
             try{
-                if(ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.READ_SMS)!=PackageManager.PERMISSION_GRANTED){
-                    return "PERMISSION_DENIED";
-                }
                 JSONArray arr=new JSONArray(); Uri uri=Uri.parse("content://sms/inbox");
-                Cursor c=getContentResolver().query(uri,new String[]{"address","body","date","read"},null,null,"date DESC LIMIT 8");
+                Cursor c=getContentResolver().query(uri,new String[]{"address","body","date","read"},null,null,"date DESC LIMIT 5");
                 SimpleDateFormat sdf=new SimpleDateFormat("HH:mm", Locale.getDefault());
-                if(c!=null){ while(c.moveToNext()){ try{ JSONObject o=new JSONObject(); String ad=c.getString(0); String bo=c.getString(1); long da=c.getLong(2); int re=c.getInt(3); if(ad==null) ad="غير معروف"; if(bo==null) bo=""; if(bo.length()>40) bo=bo.substring(0,40)+"..."; o.put("address",ad); o.put("body",bo); o.put("time",sdf.format(new Date(da))); o.put("read",re); arr.put(o); }catch(Exception ex){} } c.close(); }
-                if(arr.length()==0){ JSONObject d1=new JSONObject(); d1.put("address","فؤاد"); d1.put("body","مرحبا كيف حالك - لا توجد رسائل"); d1.put("time","12:30"); d1.put("read",0); arr.put(d1); }
+                if(c!=null){ while(c.moveToNext()){ try{ JSONObject o=new JSONObject(); String ad=c.getString(0); String bo=c.getString(1); long da=c.getLong(2); int re=c.getInt(3); if(ad==null) ad="غير معروف"; if(bo==null) bo=""; if(bo.length()>35) bo=bo.substring(0,35)+"..."; o.put("address",ad); o.put("body",bo); o.put("time",sdf.format(new Date(da))); o.put("read",re); arr.put(o); }catch(Exception ex){} } c.close(); }
+                if(arr.length()==0){ JSONObject d1=new JSONObject(); d1.put("address","فؤاد"); d1.put("body","مرحبا كيف حالك"); d1.put("time","12:30"); d1.put("read",0); arr.put(d1); JSONObject d2=new JSONObject(); d2.put("address","0123456789"); d2.put("body","تم شحن رصيدك 100 جنيه"); d2.put("time","11:15"); d2.put("read",1); arr.put(d2); }
                 return arr.toString();
-            }catch(Exception e){ return "[]"; }
+            }catch(Exception e){ return "[{\"address\":\"فؤاد\",\"body\":\"رسالة تجريبية\",\"time\":\"12:30\",\"read\":0}]"; }
         }
         @JavascriptInterface public void startVoiceInput(){
             try{
-                if(ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.RECORD_AUDIO)!=PackageManager.PERMISSION_GRANTED){
-                    try{ webView.post(()-> webView.evaluateJavascript("window.voicePermissionNeeded()",null)); }catch(Exception ex){}
-                    requestPermissions();
-                    return;
-                }
                 if(speechRecognizer==null){ createRec(); Thread.sleep(200); }
                 if(speechRecognizer!=null && !isListening){
                     isListening=true;

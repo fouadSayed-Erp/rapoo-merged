@@ -1,25 +1,30 @@
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Rapoo v4.3</title><link rel="stylesheet" href="style.css"></head><body>
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Rapoo v4.4</title><link rel="stylesheet" href="style.css"></head><body>
 <div class="keyboard-container" id="keyboardContainer">
-<div class="header" id="headerBar"><div class="dots" id="dotsMenu"><span></span><span></span><span></span></div><div class="title">RAPOO v4.3</div><div class="header-actions"><button class="icon-btn" id="floatingBtn">🪟</button><button class="icon-btn" id="clipboardBtn">📋</button><button class="icon-btn" id="micBtn">🎤</button><div class="lang-indicator" id="langIndicator">AR</div></div></div>
+<div class="header" id="headerBar"><div class="dots" id="dotsMenu"><span></span><span></span><span></span></div><div class="title">RAPOO v4.4</div><div class="header-actions"><button class="icon-btn" id="floatingBtn">🪟</button><button class="icon-btn" id="clipboardBtn">📋</button><button class="icon-btn" id="micBtn">🎤</button><div class="lang-indicator" id="langIndicator">AR</div></div></div>
 <div class="suggestion-bar" id="suggestionBar"></div>
 <div class="clipboard-bar" id="clipboardBar"></div>
 <div class="keyboard" id="keyboard"></div>
-<div class="footer" id="footer"><div class="footer-left"><span class="battery" id="batteryDisplay">🔋 54%</span><span class="time" id="timeDisplay">2:39</span></div><div class="footer-right"><span class="messages" id="messagesDisplay"></span><span id="versionText" style="font-size:6px;opacity:.6">v4.3</span></div></div>
+<div class="footer" id="footer"><div class="footer-left"><span class="battery" id="batteryDisplay">🔋 73%</span><span class="time" id="timeDisplay">12:41 PM</span></div><div class="footer-right"><span class="messages" id="messagesDisplay">💬 0</span><span id="versionText" style="font-size:6px;opacity:.5">v4.4</span></div></div>
 <div class="overlay" id="overlay"><div class="overlay-content"><div style="color:#c4b5fd;text-align:center;font-size:11px;font-weight:700">TRACKPAD</div><div style="color:#9ca3af;text-align:center;font-size:8px;margin-top:3px">اسحب يمين وشمال</div></div></div>
 <div class="numpad-overlay" id="numpadOverlay"><div class="numpad-header"><span>🔢 45%</span><button class="close-settings" id="closeNumpad">✕</button></div><div class="numpad-grid" id="numpadGrid"></div></div>
 <div class="mini-toast" id="miniToast"></div>
-<div class="settings-panel" id="settingsPanel"><div class="settings-header"><span class="settings-title">⚙️ الإعدادات</span><button class="close-settings" id="closeSettings">✕</button></div>
+<div class="settings-panel" id="settingsPanel"><div class="settings-header"><span class="settings-title">⚙️ الإعدادات v4.4</span><button class="close-settings" id="closeSettings">✕</button></div>
 <div class="settings-content">
+<div class="setting-group"><span class="setting-label">✓ إصلاحات v4.4:</span><div style="font-size:8px;color:#10b981;line-height:1.6">
+• مسح: ضغطة واحدة = حرف واحد، مطولة = مسح سريع 65ms متسارع ✓<br>
+• فويس: SpeechRecognizer مع partial results + يكتب تلقائي ✓<br>
+• بطارية وساعة: تنسيق جديد مع شحن + وقت 12h ✓<br>
+• رسائل: قراءة فعلية من SMS inbox + عدد غير مقروءة ✓
+</div></div>
 <div class="setting-group"><span class="setting-label">🌐 اللغة</span><div class="setting-grid triple" id="langOptions"><button class="option-btn" data-lang="en">EN</button><button class="option-btn" data-lang="ar">AR</button><button class="option-btn" data-lang="ar_full">AR كامل</button></div></div>
-<div class="setting-group"><span class="setting-label">🎨 الثيم</span><div class="setting-grid triple" id="themeOptions"><button class="option-btn" data-theme="dark">🌙 داكن</button><button class="option-btn" data-theme="midnight">🌌 منتصف الليل</button><button class="option-btn" data-theme="neon">💜 نيون</button></div></div>
-<div class="setting-group"><span class="setting-label">🔊 الصوت الميكانيكي</span><div class="setting-grid" id="soundOptions"><button class="option-btn" data-sound="off">🔇 صامت</button><button class="option-btn" data-sound="clicky">🔊 كليكي</button><button class="option-btn" data-sound="thocky">🔊 ثوكي</button><button class="option-btn" data-sound="linear">🔊 لينير</button></div><div class="setting-note">صوت كتابة ميكانيكل عند الضغط</div></div>
-<div class="setting-group"><span class="setting-label">🌈 RGB</span><div class="setting-grid" id="rgbOptions"><button class="option-btn" data-rgb="off">⚫ بدون</button><button class="option-btn" data-rgb="reactive">🌈 تفاعلي</button><button class="option-btn" data-rgb="rainbow">🌈 قوس قزح</button><button class="option-btn" data-rgb="wave">🌊 موجة</button></div></div>
-<div class="setting-group"><span class="setting-label">🔍 الحجم - متناسق 420dp</span><div class="setting-grid" id="scaleOptions"><button class="option-btn" data-scale="small">S 38px</button><button class="option-btn" data-scale="medium">M 44px</button><button class="option-btn" data-scale="large">L 50px</button><button class="option-btn" data-scale="xlarge">XL 56px</button></div></div>
+<div class="setting-group"><span class="setting-label">🎨 الثيم</span><div class="setting-grid triple" id="themeOptions"><button class="option-btn" data-theme="dark">🌙 داكن</button><button class="option-btn" data-theme="midnight">🌌 منتصف</button><button class="option-btn" data-theme="neon">💜 نيون</button></div></div>
+<div class="setting-group"><span class="setting-label">🔊 الصوت</span><div class="setting-grid" id="soundOptions"><button class="option-btn" data-sound="off">🔇 صامت</button><button class="option-btn" data-sound="clicky">🔊 كليكي</button><button class="option-btn" data-sound="thocky">🔊 ثوكي</button><button class="option-btn" data-sound="linear">🔊 لينير</button></div></div>
+<div class="setting-group"><span class="setting-label">🌈 RGB</span><div class="setting-grid" id="rgbOptions"><button class="option-btn" data-rgb="off">⚫ بدون</button><button class="option-btn" data-rgb="reactive">🌈 تفاعلي</button><button class="option-btn" data-rgb="rainbow">🌈 قوس</button><button class="option-btn" data-rgb="wave">🌊 موجة</button></div></div>
+<div class="setting-group"><span class="setting-label">🔍 الحجم</span><div class="setting-grid" id="scaleOptions"><button class="option-btn" data-scale="small">S 38px</button><button class="option-btn" data-scale="medium">M 44px</button><button class="option-btn" data-scale="large">L 50px</button><button class="option-btn" data-scale="xlarge">XL 56px</button></div></div>
 <div class="setting-group"><span class="setting-label">🎤 مايك + 📋 حافظة + 🪟 عائم + 🔢 نمباد + 📳 اهتزاز</span>
-<div class="setting-grid" id="featureOptions"><button class="option-btn" id="micToggle">🎤 مايك</button><button class="option-btn" id="clipboardToggle">📋 حافظة</button><button class="option-btn" id="floatingToggle">🪟 عائم</button><button class="option-btn" id="numpadToggle">🔢 نمباد 45%</button><button class="option-btn" id="vibToggle">📳 اهتزاز</button><button class="option-btn" id="instrToggle">👁️ إرشادات</button></div>
-<div class="setting-note">دوس fn مرتين لفتح النمباد • دوس مطول على المسافة للتراك باد</div>
+<div class="setting-grid" id="featureOptions"><button class="option-btn" id="micToggle">🎤 مايك</button><button class="option-btn" id="clipboardToggle">📋 حافظة</button><button class="option-btn" id="floatingToggle">🪟 عائم</button><button class="option-btn" id="numpadToggle">🔢 نمباد</button><button class="option-btn" id="vibToggle">📳 اهتزاز</button><button class="option-btn" id="instrToggle">👁️ إرشادات</button></div>
 </div>
-<div class="setting-group"><span class="setting-label">⚙️ عام</span><div class="setting-row"><button class="option-btn" id="resetBtn">🔄 ضبط مصنع</button></div></div>
+<div class="setting-group"><div class="setting-row"><button class="option-btn" id="resetBtn">🔄 ضبط مصنع</button></div></div>
 </div>
 </div>
 </div>

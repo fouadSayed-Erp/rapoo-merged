@@ -1,4 +1,4 @@
-const keyboardEl=document.getElementById('keyboard'),suggestionBar=document.getElementById('suggestionBar'),langIndicator=document.getElementById('langIndicator'),versionText=document.getElementById('versionText'),miniToast=document.getElementById('miniToast'),numpadOverlay=document.getElementById('numpadOverlay'),numpadGrid=document.getElementById('numpadGrid'),batteryDisplay=document.getElementById('batteryDisplay'),timeDisplay=document.getElementById('timeDisplay'),keyboardContainer=document.getElementById('keyboardContainer'),clipboardBar=document.getElementById('clipboardBar');
+const keyboardEl=document.getElementById('keyboard'),suggestionBar=document.getElementById('suggestionBar'),langIndicator=document.getElementById('langIndicator'),versionText=document.getElementById('versionText'),miniToast=document.getElementById('miniToast'),numpadOverlay=document.getElementById('numpadOverlay'),numpadGrid=document.getElementById('numpadGrid'),batteryDisplay=document.getElementById('batteryDisplay'),timeDisplay=document.getElementById('timeDisplay'),keyboardContainer=document.getElementById('keyboardContainer'),clipboardBar=document.getElementById('clipboardBar'),messagesDisplay=document.getElementById('messagesDisplay');
 let isShift=false,isCaps=false,isCtrl=false,isAlt=false,isTrackpadActive=false,holdTimer=null,lastMoveX=0;
 let currentLang='ar',currentTheme='dark',currentSound='clicky',currentRGB='reactive',currentScale='medium',vibEnabled=true,soundEnabled=true,autocorrectEnabled=true,suggestEnabled=true,numpadEnabled=true,micEnabled=true,isFloating=false,isMicListening=false,showInstructions=false;
 let currentWord='',processingKey=false,spacePressed=false;
@@ -45,8 +45,8 @@ function getSmartSuggestions(word){
 }
 function updateSuggestions(){
   try{
-    if(!suggestEnabled||!showInstructions){ suggestionBar.innerHTML=''; suggestionBar.style.display='none'; return; }
-    suggestionBar.style.display='flex';
+    if(!suggestEnabled||!showInstructions){ suggestionBar.innerHTML=''; suggestionBar.classList.remove("show"); return; }
+    suggestionBar.classList.add("show");
     if(!currentWord){ suggestionBar.innerHTML=''; return; }
     const sugs=getSmartSuggestions(currentWord);
     let html='';
@@ -65,7 +65,7 @@ function handleSpace(){
   if(dict.corrections && dict.corrections[lower]){
     const correction=dict.corrections[lower];
     delN(currentWord.length);
-    setTimeout(()=>{ commit(correction+" "); if(showInstructions) showToast("✓ "+currentWord+" → "+correction); currentWord=""; playSound(); },20);
+    setTimeout(()=>{ commit(correction+" "); currentWord=""; playSound(); },20);
     return true;
   }
   return false;
@@ -79,16 +79,60 @@ function onCharTyped(ch){
 function onDelete(){ if(currentWord.length>0) currentWord=currentWord.slice(0,-1); updateSuggestions(); }
 function updateFooter(){
   try{
-    let battery=54;
-    if(window.Android&&Android.getBatteryLevel) battery=Android.getBatteryLevel();
-    let timeStr="2:39";
-    if(window.Android&&Android.getTime) timeStr=Android.getTime();
-    else { const d=new Date(); timeStr=d.getHours()+":"+String(d.getMinutes()).padStart(2,"0"); }
-    batteryDisplay.innerHTML="🔋 "+battery+"%";
+    let battery=73;
+    let isCharging=false;
+    let timeStr="12:41 PM";
+    let time24="12:41";
+    if(window.Android){
+      if(Android.getBatteryLevel) battery=Android.getBatteryLevel();
+      if(Android.isCharging) isCharging=Android.isCharging();
+      if(Android.getTime) timeStr=Android.getTime();
+      if(Android.getTime24) time24=Android.getTime24();
+    } else {
+      const d=new Date();
+      const h=d.getHours();
+      const m=String(d.getMinutes()).padStart(2,"0");
+      time24=h+":"+m;
+      const ampm=h>=12?"PM":"AM";
+      const h12=h%12||12;
+      timeStr=h12+":"+m+" "+ampm;
+    }
+    // بطارية منسقة
+    let batIcon="🔋";
+    if(isCharging) batIcon="⚡";
+    else if(battery<20) batIcon="🪫";
+    else if(battery>90) batIcon="🔋";
+    batteryDisplay.textContent=batIcon+" "+battery+"%";
+    batteryDisplay.className="battery"+(isCharging?" charging":"");
+    // ساعة منسقة
     timeDisplay.textContent=timeStr;
+    timeDisplay.title=time24;
+    
+    // رسائل فعلية
+    try{
+      if(window.Android && Android.getUnreadMessages){
+        const unread=Android.getUnreadMessages();
+        if(unread>=0){
+          if(unread>0){
+            messagesDisplay.textContent="💬 "+unread+" غير مقروءة";
+            messagesDisplay.className="messages has-unread";
+            messagesDisplay.title=unread+" رسائل غير مقروءة";
+          } else {
+            messagesDisplay.textContent="💬 0";
+            messagesDisplay.className="messages";
+            messagesDisplay.title="لا رسائل غير مقروءة";
+          }
+        } else {
+          // بدون صلاحية
+          messagesDisplay.textContent="💬";
+          messagesDisplay.className="messages";
+          messagesDisplay.title="فعّل صلاحية قراءة الرسائل";
+        }
+      }
+    }catch(e){}
   }catch(e){}
 }
-setInterval(updateFooter,2000);
+setInterval(updateFooter,1000);
 updateFooter();
 function updateClipboardBar(){
   clipboardBar.innerHTML="";
@@ -96,19 +140,47 @@ function updateClipboardBar(){
     const div=document.createElement("div");
     div.className="clip-item";
     div.textContent=item.length>16?item.substring(0,16)+"...":item;
-    div.addEventListener("click",()=>{ commit(item+" "); if(showInstructions) showToast("📋 "+item+" ✓"); clipboardBar.classList.remove("show"); playSound(); });
+    div.addEventListener("click",()=>{ commit(item+" "); clipboardBar.classList.remove("show"); playSound(); });
     clipboardBar.appendChild(div);
   });
 }
 updateClipboardBar();
+
+// فويس يكتب عند التحدث - مع partial results
+let voicePartialText='';
+window.voiceReady=function(){ if(showInstructions) showToast("🎤 جاهز..."); suggestionBar.classList.add("show"); suggestionBar.innerHTML='<div class="suggestion" style="background:#10b981;color:#fff">🎤 استمع...</div>'; };
+window.voiceBegin=function(){ suggestionBar.classList.add("show"); suggestionBar.innerHTML='<div class="suggestion" style="background:#ef4444;color:#fff;animation:pulse .8s infinite">🎤 اتكلم الآن...</div>'; voicePartialText=''; };
+window.voicePartial=function(text){ voicePartialText=text; suggestionBar.classList.add("show"); suggestionBar.innerHTML='<div class="suggestion" style="background:#8b5cf6;color:#fff">🎤 '+text+'</div>'; };
+window.voiceEnd=function(){ suggestionBar.innerHTML='<div class="suggestion" style="background:#f59e0b;color:#000">⏳ معالجة...</div>'; };
 window.voiceResult=function(text){
   isMicListening=false;
   document.querySelectorAll(".key.mic, #micBtn").forEach(k=>k.classList.remove("listening","active"));
-  if(text && text.length>0){ commit(text+" "); if(showInstructions) showToast("🎤 "+text+" ✓"); playSound(); }
+  if(text && text.length>0){
+    commit(text+" ");
+    suggestionBar.classList.add("show");
+    suggestionBar.innerHTML='<div class="suggestion" style="background:#10b981;color:#fff">✓ '+text+'</div>';
+    setTimeout(()=>{ if(!currentWord) { suggestionBar.classList.remove("show"); suggestionBar.innerHTML=''; } },2000);
+    try{ if(!clipboardItems.includes(text)){ clipboardItems.unshift(text); if(clipboardItems.length>15) clipboardItems.pop(); updateClipboardBar(); } }catch(e){}
+    playSound();
+  } else {
+    suggestionBar.innerHTML='<div class="suggestion" style="background:#6b7280;color:#fff">🎤 لم أسمع</div>';
+    setTimeout(()=>{ suggestionBar.classList.remove("show"); },1500);
+  }
 };
-window.voiceEnded=function(){
+window.voiceNoResult=function(){
   isMicListening=false;
   document.querySelectorAll(".key.mic, #micBtn").forEach(k=>k.classList.remove("listening","active"));
+  suggestionBar.innerHTML='<div class="suggestion" style="background:#6b7280;color:#fff">🎤 لم أسمع شيئاً</div>';
+  setTimeout(()=>{ suggestionBar.classList.remove("show"); },1500);
+};
+window.voiceError=function(code){
+  isMicListening=false;
+  document.querySelectorAll(".key.mic, #micBtn").forEach(k=>k.classList.remove("listening","active"));
+  let msg="خطأ";
+  if(code==6) msg="لا يوجد صوت";
+  else if(code==7) msg="لم أفهم";
+  suggestionBar.innerHTML='<div class="suggestion" style="background:#ef4444;color:#fff">🎤 '+msg+'</div>';
+  setTimeout(()=>{ suggestionBar.classList.remove("show"); },2000);
 };
 
 function renderKeyboard(){
@@ -151,38 +223,40 @@ function updateUI(){
     document.getElementById("ctrlKey")?.classList.toggle("active", isCtrl);
     document.getElementById("altKey")?.classList.toggle("active", isAlt);
     langIndicator.textContent=currentLang.toUpperCase().slice(0,3);
-    versionText.textContent="v4.3";
+    versionText.textContent="v4.4";
     document.body.className=document.body.className.replace(/theme-\S+/g,"").replace(/scale-\S+/g,"").replace(/rgb-\S+/g,"");
     document.body.classList.add("theme-"+currentTheme);
     document.body.classList.add("scale-"+currentScale);
     if(currentRGB!=="off") document.body.classList.add("rgb-"+currentRGB);
     if(isFloating) keyboardContainer.classList.add("floating"); else keyboardContainer.classList.remove("floating");
-    if(!showInstructions){
-      suggestionBar.style.display='none';
-      document.getElementById("messagesDisplay").style.display='none';
-    } else {
-      suggestionBar.style.display='flex';
-      document.getElementById("messagesDisplay").style.display='inline';
-    }
   }catch(e){}
 }
 
-// مسح سريع + تراك باد ليكويد جلاس
-let deleteInterval=null,deleteHoldTimer=null,deleteActive=false,deletePointerId=null,deleteStartTime=0,deleteMoved=false;
+// مسح: ضغطة واحدة حرف، مطولة مسح سريع متسارع
+let deleteInterval=null,deleteHoldTimer=null,deleteActive=false,deletePointerId=null,deleteStartTime=0,deleteMoved=false,deleteCount=0;
 function stopDeleteCompletely(){
   deleteActive=false;
   deleteMoved=false;
+  deleteCount=0;
   if(deleteInterval){ clearInterval(deleteInterval); deleteInterval=null; }
   if(deleteHoldTimer){ clearTimeout(deleteHoldTimer); deleteHoldTimer=null; }
   deletePointerId=null;
   deleteStartTime=0;
+  document.querySelectorAll(".key.del").forEach(k=>k.classList.remove("deleting"));
 }
 function startFastDeleteLoop(){
   if(deleteActive) return;
   deleteActive=true;
-  // سريع - 65ms
+  deleteCount=0;
+  document.querySelectorAll(".key.del").forEach(k=>k.classList.add("deleting"));
   deleteInterval=setInterval(()=>{
     del(); onDelete(); playSound();
+    deleteCount++;
+    // تسارع بعد 10 حروف
+    if(deleteCount>10){
+      clearInterval(deleteInterval);
+      deleteInterval=setInterval(()=>{ del(); onDelete(); playSound(); },40);
+    }
   },65);
 }
 
@@ -207,17 +281,17 @@ function attachEvents(){
         deleteStartTime=Date.now();
         deleteMoved=false;
         k.classList.add("pressed");
-        // مسح سريع بعد 300ms فقط
+        // بعد 350ms يبدأ مسح سريع
         deleteHoldTimer=setTimeout(()=>{
           if(!deleteMoved){
             startFastDeleteLoop();
           }
-        },300);
+        },350);
       }, {passive:false});
 
       k.addEventListener("pointermove", (e)=>{
         if(e.pointerId!==deletePointerId) return;
-        if(Math.abs(e.clientX-(k.getBoundingClientRect().left+e.target.clientWidth/2))>12) deleteMoved=true;
+        if(Math.abs(e.clientX-(k.getBoundingClientRect().left+k.getBoundingClientRect().width/2))>14) deleteMoved=true;
         if(deleteMoved) stopDeleteCompletely();
       }, {passive:true});
 
@@ -367,8 +441,9 @@ function attachEvents(){
         isMicListening=true;
         k.classList.add("listening");
         document.getElementById("micBtn")?.classList.add("listening","active");
+        voicePartialText='';
         try{ if(window.Android&&Android.startVoiceInput) Android.startVoiceInput(); }catch(ex){ isMicListening=false; k.classList.remove("listening"); }
-        setTimeout(()=>{ if(isMicListening){ isMicListening=false; k.classList.remove("listening"); document.getElementById("micBtn")?.classList.remove("listening","active"); } },8000);
+        setTimeout(()=>{ if(isMicListening){ isMicListening=false; k.classList.remove("listening"); document.getElementById("micBtn")?.classList.remove("listening","active"); try{ if(window.Android&&Android.stopVoiceInput) Android.stopVoiceInput(); }catch(ex){} } },8000);
         return;
       }
       if(isClip){ clipboardBar.classList.toggle("show"); updateClipboardBar(); return; }
@@ -431,7 +506,7 @@ document.getElementById("micBtn")?.addEventListener("click",function(){
   this.classList.add("listening","active");
   document.querySelectorAll(".key.mic").forEach(k=>k.classList.add("listening"));
   try{ if(window.Android&&Android.startVoiceInput) Android.startVoiceInput(); }catch(e){ isMicListening=false; this.classList.remove("listening","active"); }
-  setTimeout(()=>{ if(isMicListening){ isMicListening=false; this.classList.remove("listening","active"); document.querySelectorAll(".key.mic").forEach(k=>k.classList.remove("listening")); } },8000);
+  setTimeout(()=>{ if(isMicListening){ isMicListening=false; this.classList.remove("listening","active"); document.querySelectorAll(".key.mic").forEach(k=>k.classList.remove("listening")); try{ if(window.Android&&Android.stopVoiceInput) Android.stopVoiceInput(); }catch(e){} } },8000);
 });
 document.getElementById("clipboardBtn")?.addEventListener("click",function(){ clipboardBar.classList.toggle("show"); updateClipboardBar(); this.classList.toggle("active", clipboardBar.classList.contains("show")); });
 document.getElementById("floatingBtn")?.addEventListener("click",function(){ isFloating=!isFloating; this.classList.toggle("active", isFloating); saveSet("floating", isFloating?"true":"false"); updateUI(); });
@@ -453,8 +528,5 @@ document.querySelector('[data-theme="'+currentTheme+'"]')?.classList.add("active
 document.querySelector('[data-sound="'+currentSound+'"]')?.classList.add("active");
 document.querySelector('[data-rgb="'+currentRGB+'"]')?.classList.add("active");
 document.querySelector('[data-scale="'+currentScale+'"]')?.classList.add("active");
-document.getElementById("micToggle")?.classList.toggle("active", micEnabled);
-document.getElementById("instrToggle")?.classList.toggle("active", showInstructions);
-document.getElementById("instrToggle").textContent="👁️ إرشادات: "+(showInstructions?"مفعلة":"مخفية");
 renderKeyboard();
-console.log("v4.3 - مسح سريع 300ms/65ms, إعدادات كاملة, بدون إرشادات, تراك باد ليكويد جلاس شفاف");
+console.log("v4.4 - مسح حرف/سريع متسارع, فويس يكتب مع partial, بطارية ساعة منسق, رسائل فعلية غير مقروءة");

@@ -1,7 +1,7 @@
-const keyboardEl=document.getElementById('keyboard'),suggestionBar=document.getElementById('suggestionBar'),langIndicator=document.getElementById('langIndicator'),versionText=document.getElementById('versionText'),miniToast=document.getElementById('miniToast'),numpadOverlay=document.getElementById('numpadOverlay'),numpadGrid=document.getElementById('numpadGrid'),batteryDisplay=document.getElementById('batteryDisplay'),timeDisplay=document.getElementById('timeDisplay'),keyboardContainer=document.getElementById('keyboardContainer'),clipboardBar=document.getElementById('clipboardBar'),messagesDisplay=document.getElementById('messagesDisplay'),messagesPopup=document.getElementById('messagesPopup'),messagesList=document.getElementById('messagesList'),messagesPopupTitle=document.getElementById('messagesPopupTitle');
+const keyboardEl=document.getElementById('keyboard'),suggestionBar=document.getElementById('suggestionBar'),langIndicator=document.getElementById('langIndicator'),versionText=document.getElementById('versionText'),numpadOverlay=document.getElementById('numpadOverlay'),numpadGrid=document.getElementById('numpadGrid'),batteryDisplay=document.getElementById('batteryDisplay'),timeDisplay=document.getElementById('timeDisplay'),keyboardContainer=document.getElementById('keyboardContainer'),clipboardBar=document.getElementById('clipboardBar'),messagesDisplay=document.getElementById('messagesDisplay'),messagesPopup=document.getElementById('messagesPopup'),messagesList=document.getElementById('messagesList'),messagesPopupTitle=document.getElementById('messagesPopupTitle');
 let isShift=false,isCaps=false,isCtrl=false,isAlt=false;
-let currentLang='ar',currentTheme='liquid-neon',currentSound='clicky',currentRGB='reactive',currentScale='medium',vibEnabled=true,soundEnabled=true,numpadEnabled=true,micEnabled=true,isFloating=false,isMicListening=false,showInstructions=false;
-let currentWord='',spacePressed=false;
+let currentLang='ar',currentTheme='liquid-neon',currentSound='clicky',currentRGB='reactive',currentScale='medium',vibEnabled=true,soundEnabled=true,numpadEnabled=true,micEnabled=true,isFloating=false,isMicListening=false;
+let spacePressed=false;
 let clipboardItems=["مرحبا","كيف حالك","فؤاد","شكرا","تمام"];
 const KC={ESC:111,F1:131,F2:132,F3:133,F4:134,F5:135,F6:136,F7:137,F8:138,F9:139,F10:140,F11:141,F12:142,TAB:61,ENTER:66,DEL:67,LEFT:21,RIGHT:22};
 const layouts={
@@ -36,12 +36,11 @@ function playSound(t='regular'){
 }
 function commit(t){ try{ if(window.Android&&Android.commitText) Android.commitText(t); }catch(e){} }
 function del(){ try{ if(window.Android&&Android.deleteText) Android.deleteText(); }catch(e){} }
-function delN(n){ try{ if(window.Android&&Android.deleteN) Android.deleteN(n); }catch(e){} }
 function sendKey(kc){ try{ if(window.Android&&Android.sendKey) Android.sendKey(kc); }catch(e){} }
 function moveCursor(dx){ try{ if(window.Android&&Android.moveCursor) Android.moveCursor(dx); }catch(e){} }
 function saveSet(k,v){ try{ localStorage.setItem("rapoo_"+k,v); if(window.Android&&Android.saveSetting) Android.saveSetting(k,v);}catch(e){} }
 function loadSet(k,d){ try{ const v=localStorage.getItem("rapoo_"+k); if(v!==null) return v; if(window.Android&&Android.getSetting){const av=Android.getSetting(k,d); if(av) return av;}}catch(e){} return d; }
-function vibrate(){ if(!vibEnabled) return; try{if(navigator.vibrate) navigator.vibrate(5)}catch(e){} }
+function vibrate(){ if(!vibEnabled) return; try{if(navigator.vibrate) navigator.vibrate(8)}catch(e){} }
 function updateFooter(){
   try{
     let battery=73; let isCharging=false; let timeStr="12:41 PM";
@@ -49,25 +48,24 @@ function updateFooter(){
     else { const d=new Date(); const h=d.getHours(); const m=String(d.getMinutes()).padStart(2,"0"); const ampm=h>=12?"PM":"AM"; const h12=h%12||12; timeStr=h12+":"+m+" "+ampm; }
     let icon="🔋"; if(isCharging) icon="⚡"; else if(battery<20) icon="🪫";
     batteryDisplay.textContent=icon+" "+battery+"%"; batteryDisplay.className="battery"+(isCharging?" charging":""); timeDisplay.textContent=timeStr;
-    try{ if(window.Android && Android.getUnreadMessages){ const unread=Android.getUnreadMessages(); const total=Android.getTotalMessages?Android.getTotalMessages():-1; if(unread>=0){ if(unread>0){ messagesDisplay.textContent="💬 "+unread; messagesDisplay.className="messages has-unread"; messagesPopupTitle.textContent="💬 "+unread+" غير مقروءة • "+total+" واردة"; } else { messagesDisplay.textContent="💬 "+(total>=0?total:"0"); messagesDisplay.className="messages"; } } else { messagesDisplay.textContent="💬 2"; messagesDisplay.className="messages has-unread"; } } }catch(e){}
+    try{ if(window.Android && Android.getUnreadMessages){ const unread=Android.getUnreadMessages(); const total=Android.getTotalMessages?Android.getTotalMessages():-1; if(unread>=0){ if(unread>0){ messagesDisplay.textContent="💬 "+unread; messagesDisplay.className="messages has-unread"; messagesPopupTitle.textContent="💬 "+unread+" غير مقروءة • "+total+" واردة"; } else { messagesDisplay.textContent="💬 "+(total>=0?total:"0"); messagesDisplay.className="messages"; } } else { messagesDisplay.textContent="💬 🔒"; messagesDisplay.className="messages"; } } }catch(e){}
   }catch(e){}
 }
 setInterval(updateFooter,1000); updateFooter();
 function updateClipboardBar(){ clipboardBar.innerHTML=""; clipboardItems.forEach(item=>{ const div=document.createElement("div"); div.className="clip-item"; div.textContent=item.length>16?item.substring(0,16)+"...":item; div.addEventListener("click",()=>{ commit(item+" "); clipboardBar.classList.remove("show"); playSound('regular'); }); clipboardBar.appendChild(div); }); }
 updateClipboardBar();
-window.voiceBegin=function(){ suggestionBar.classList.add("show"); suggestionBar.innerHTML='<div class="suggestion" style="background:#ef4444;color:#fff">🎤 اتكلم...</div>'; };
-window.voicePartial=function(t){ suggestionBar.classList.add("show"); suggestionBar.innerHTML='<div class="suggestion" style="background:#8b5cf6;color:#fff">🎤 '+t+'</div>'; };
-window.voiceEnd=function(){ suggestionBar.innerHTML='<div class="suggestion" style="background:#f59e0b;color:#000">⏳ معالجة...</div>'; };
-window.voiceResult=function(t){
-  isMicListening=false; document.querySelectorAll(".key.mic, #micBtn").forEach(k=>k.classList.remove("listening","active"));
-  if(t && t.length>0){ commit(t+" "); suggestionBar.classList.add("show"); suggestionBar.innerHTML='<div class="suggestion" style="background:#10b981;color:#fff">✓ '+t+'</div>'; setTimeout(()=>{ suggestionBar.classList.remove("show"); suggestionBar.innerHTML=''; },2000); playSound('space'); } else { suggestionBar.innerHTML='<div class="suggestion" style="background:#6b7280;color:#fff">🎤 لم أسمع</div>'; setTimeout(()=>{ suggestionBar.classList.remove("show"); },1500); }
-};
-window.voiceNoResult=function(){ isMicListening=false; document.querySelectorAll(".key.mic, #micBtn").forEach(k=>k.classList.remove("listening","active")); suggestionBar.innerHTML='<div class="suggestion" style="background:#6b7280;color:#fff">🎤 لم أسمع</div>'; setTimeout(()=>{ suggestionBar.classList.remove("show"); },1500); };
-window.voiceError=function(c){ isMicListening=false; document.querySelectorAll(".key.mic, #micBtn").forEach(k=>k.classList.remove("listening","active")); let m="خطأ"; if(c==6) m="لا يوجد صوت"; else if(c==7) m="لم أفهم"; suggestionBar.innerHTML='<div class="suggestion" style="background:#ef4444;color:#fff">🎤 '+m+'</div>'; setTimeout(()=>{ suggestionBar.classList.remove("show"); },2000); };
+window.voicePermissionNeeded=function(){ isMicListening=false; document.querySelectorAll(".key.mic, #micBtn").forEach(k=>k.classList.remove("listening","active")); const sb=document.getElementById('suggestionBar'); if(sb){ sb.classList.add("show"); sb.innerHTML='<div class="suggestion" style="background:#ef4444;color:#fff;cursor:pointer" onclick="Android.requestPermissions()">🎤 إذن المايك مطلوب - اضغط للسماح</div>'; } };
+window.smsPermissionNeeded=function(){ messagesList.innerHTML='<div style="padding:12px;text-align:center"><div style="color:#ef4444;font-size:10px;font-weight:800;margin-bottom:8px">🔒 إذن الرسائل مطلوب</div><div style="font-size:8px;color:#9ca3af;margin-bottom:8px">لعرض الرسائل الفعلية</div><button onclick="Android.requestPermissions()" style="background:#8b5cf6;color:#fff;border:none;padding:6px 12px;border-radius:8px;font-size:9px;font-weight:700;cursor:pointer">✓ منح الإذن</button></div>'; messagesPopup.classList.add("show"); };
+window.voiceBegin=function(){ const sb=document.getElementById('suggestionBar'); if(sb){ sb.classList.add("show"); sb.innerHTML='<div class="suggestion" style="background:#ef4444;color:#fff">🎤 اتكلم...</div>'; } };
+window.voicePartial=function(t){ const sb=document.getElementById('suggestionBar'); if(sb){ sb.classList.add("show"); sb.innerHTML='<div class="suggestion" style="background:#8b5cf6;color:#fff">🎤 '+t+'</div>'; } };
+window.voiceEnd=function(){ const sb=document.getElementById('suggestionBar'); if(sb){ sb.innerHTML='<div class="suggestion" style="background:#f59e0b;color:#000">⏳ معالجة...</div>'; } };
+window.voiceResult=function(t){ isMicListening=false; document.querySelectorAll(".key.mic, #micBtn").forEach(k=>k.classList.remove("listening","active")); if(t && t.length>0){ commit(t+" "); const sb=document.getElementById('suggestionBar'); if(sb){ sb.classList.add("show"); sb.innerHTML='<div class="suggestion" style="background:#10b981;color:#fff">✓ '+t+'</div>'; setTimeout(()=>{ sb.classList.remove("show"); },2000); } playSound('space'); } };
+window.voiceNoResult=function(){ isMicListening=false; document.querySelectorAll(".key.mic, #micBtn").forEach(k=>k.classList.remove("listening","active")); };
+window.voiceError=function(c){ isMicListening=false; document.querySelectorAll(".key.mic, #micBtn").forEach(k=>k.classList.remove("listening","active")); };
+
 function renderKeyboard(){
   try{
     const layout=layouts[currentLang]||layouts.ar;
-    if(!layout) throw new Error("no layout");
     let html="";
     const rows=[{k:"f",cls:"row-f"},{k:"n",cls:"row-n"},{k:"q",cls:"row-q"},{k:"a",cls:"row-a"},{k:"z",cls:"row-z"},{k:"b",cls:"row-b"}];
     rows.forEach(r=>{
@@ -106,7 +104,7 @@ function updateUI(){
     document.getElementById("capsKey")?.classList.toggle("active", isCaps);
     document.querySelectorAll("#shiftKey,#shiftKey2").forEach(k=>k.classList.toggle("active", isShift||isCaps));
     langIndicator.textContent=currentLang.toUpperCase().slice(0,3);
-    versionText.textContent="v4.6";
+    versionText.textContent="v4.8";
     const old = Array.from(document.body.classList).find(c=>c.startsWith('theme-'));
     if(old) document.body.classList.remove(old);
     document.body.classList.add("theme-"+currentTheme);
@@ -117,9 +115,18 @@ function updateUI(){
     if(isFloating) keyboardContainer.classList.add("floating"); else keyboardContainer.classList.remove("floating");
   }catch(e){}
 }
+// مسح سريع فوري - 200ms يبدأ + 40ms سريع + 15ms صاروخ
 let deleteInterval=null,deleteHoldTimer=null,deleteActive=false,deletePointerId=null,deleteStartTime=0,deleteMoved=false,deleteCount=0;
 function stopDelete(){ deleteActive=false; deleteMoved=false; deleteCount=0; if(deleteInterval){ clearInterval(deleteInterval); deleteInterval=null; } if(deleteHoldTimer){ clearTimeout(deleteHoldTimer); deleteHoldTimer=null; } deletePointerId=null; deleteStartTime=0; document.querySelectorAll(".key.del").forEach(k=>k.classList.remove("deleting")); }
-function startDelete(){ if(deleteActive) return; deleteActive=true; deleteCount=0; document.querySelectorAll(".key.del").forEach(k=>k.classList.add("deleting")); deleteInterval=setInterval(()=>{ del(); playSound('delete'); deleteCount++; if(deleteCount==5){ clearInterval(deleteInterval); deleteInterval=setInterval(()=>{ del(); playSound('delete'); deleteCount++; if(deleteCount>15){ clearInterval(deleteInterval); deleteInterval=setInterval(()=>{ del(); playSound('delete'); },20); } },50); } },50); }
+function startDelete(){
+  if(deleteActive) return; deleteActive=true; deleteCount=0;
+  document.querySelectorAll(".key.del").forEach(k=>k.classList.add("deleting"));
+  // فوري سريع 40ms
+  deleteInterval=setInterval(()=>{
+    del(); playSound('delete'); vibrate(); deleteCount++;
+    if(deleteCount==5){ clearInterval(deleteInterval); deleteInterval=setInterval(()=>{ del(); playSound('delete'); deleteCount++; if(deleteCount>10){ clearInterval(deleteInterval); deleteInterval=setInterval(()=>{ del(); playSound('delete'); deleteCount++; if(deleteCount>20){ clearInterval(deleteInterval); deleteInterval=setInterval(()=>{ del(); playSound('delete'); },15); } },20); } },30); }
+  },40);
+}
 function attachEvents(){
   window.addEventListener("pointerup",()=>{ stopDelete(); }, {passive:true, capture:true});
   window.addEventListener("pointercancel",()=>{ stopDelete(); }, {passive:true, capture:true});
@@ -132,9 +139,9 @@ function attachEvents(){
     const isFn=k.id==="fnKey" || k.dataset.key==="fn";
     const kc=parseInt(k.dataset.kc)||0;
     if(isDel){
-      k.addEventListener("pointerdown", (e)=>{ e.preventDefault(); k.setPointerCapture(e.pointerId); deletePointerId=e.pointerId; deleteStartTime=Date.now(); deleteMoved=false; k.classList.add("pressed"); deleteHoldTimer=setTimeout(()=>{ if(!deleteMoved) startDelete(); },250); }, {passive:false});
+      k.addEventListener("pointerdown", (e)=>{ e.preventDefault(); k.setPointerCapture(e.pointerId); deletePointerId=e.pointerId; deleteStartTime=Date.now(); deleteMoved=false; k.classList.add("pressed"); deleteHoldTimer=setTimeout(()=>{ if(!deleteMoved) startDelete(); },200); }, {passive:false});
       k.addEventListener("pointermove", (e)=>{ if(e.pointerId!==deletePointerId) return; if(Math.abs(e.clientX-(k.getBoundingClientRect().left+k.getBoundingClientRect().width/2))>14) deleteMoved=true; if(deleteMoved) stopDelete(); }, {passive:true});
-      k.addEventListener("pointerup", (e)=>{ if(e.pointerId!==deletePointerId) return; e.preventDefault(); const dur=Date.now()-deleteStartTime; k.classList.remove("pressed"); try{ k.releasePointerCapture(e.pointerId); }catch(ex){} if(deleteActive){ stopDelete(); } else { if(!deleteMoved && dur<400){ del(); playSound('delete'); vibrate(); } stopDelete(); } }, {passive:false});
+      k.addEventListener("pointerup", (e)=>{ if(e.pointerId!==deletePointerId) return; e.preventDefault(); const dur=Date.now()-deleteStartTime; k.classList.remove("pressed"); try{ k.releasePointerCapture(e.pointerId); }catch(ex){} if(deleteActive){ stopDelete(); } else { if(!deleteMoved && dur<350){ del(); playSound('delete'); vibrate(); } stopDelete(); } }, {passive:false});
       k.addEventListener("pointercancel", (e)=>{ k.classList.remove("pressed"); stopDelete(); }, {passive:true});
       return;
     }
@@ -153,7 +160,11 @@ function attachEvents(){
       if(e.pointerId!==pid) return; if(handled) return; handled=true; e.preventDefault(); k.classList.remove("pressed"); try{ k.releasePointerCapture(e.pointerId); }catch(ex){} pid=null; if(moved) return;
       const key=k.dataset.key; if(!key) return; vibrate();
       let st='regular'; if(kc===KC.ENTER || key==='↵') st='enter'; else if(kc===KC.TAB || key==='tab') st='tab'; else if(key==='space'||key==='مسافة') st='space'; playSound(st);
-      if(isMic){ if(isMicListening){ try{ if(window.Android&&Android.stopVoiceInput) Android.stopVoiceInput(); }catch(ex){} isMicListening=false; k.classList.remove("listening"); document.getElementById("micBtn")?.classList.remove("listening","active"); return; } if(!micEnabled) return; isMicListening=true; k.classList.add("listening"); document.getElementById("micBtn")?.classList.add("listening","active"); try{ if(window.Android&&Android.startVoiceInput) Android.startVoiceInput(); }catch(ex){ isMicListening=false; k.classList.remove("listening"); } setTimeout(()=>{ if(isMicListening){ isMicListening=false; k.classList.remove("listening"); document.getElementById("micBtn")?.classList.remove("listening","active"); try{ if(window.Android&&Android.stopVoiceInput) Android.stopVoiceInput(); }catch(ex){} } },8000); return; }
+      if(isMic){
+        if(window.Android && Android.hasAudioPermission && !Android.hasAudioPermission()){ window.voicePermissionNeeded(); if(window.Android && Android.requestPermissions) Android.requestPermissions(); return; }
+        if(isMicListening){ try{ if(window.Android&&Android.stopVoiceInput) Android.stopVoiceInput(); }catch(ex){} isMicListening=false; k.classList.remove("listening"); document.getElementById("micBtn")?.classList.remove("listening","active"); return; }
+        if(!micEnabled) return; isMicListening=true; k.classList.add("listening"); document.getElementById("micBtn")?.classList.add("listening","active"); try{ if(window.Android&&Android.startVoiceInput) Android.startVoiceInput(); }catch(ex){ isMicListening=false; k.classList.remove("listening"); } setTimeout(()=>{ if(isMicListening){ isMicListening=false; k.classList.remove("listening"); document.getElementById("micBtn")?.classList.remove("listening","active"); try{ if(window.Android&&Android.stopVoiceInput) Android.stopVoiceInput(); }catch(ex){} } },8000); return;
+      }
       if(isClip){ clipboardBar.classList.toggle("show"); updateClipboardBar(); return; }
       if(isFn){ const now=Date.now(); if(now-(window.lastFnTap||0)<350){ if(numpadEnabled) numpadOverlay.classList.toggle("show"); } window.lastFnTap=now; return; }
       if(kc>0){ if(kc===KC.CAPS || key==='caps'){ isCaps=!isCaps; updateUI(); return; } if(kc===KC.TAB || key==='tab'){ commit("\t"); sendKey(KC.TAB); return; } if(kc===KC.ENTER || key==='↵'){ commit("\n"); sendKey(KC.ENTER); return; } if(kc===KC.LEFT){ moveCursor(-1); return; } if(kc===KC.RIGHT){ moveCursor(1); return; } if(kc>=KC.F1 && kc<=KC.F12){ sendKey(kc); return; } if(kc===KC.ESC){ sendKey(kc); return; } }
@@ -174,8 +185,8 @@ function attachEvents(){
   if(overlay) overlay.addEventListener("click",()=>{ document.getElementById("spaceTrackpad")?.classList.remove("track-active"); overlay.classList.remove("show"); });
   function showMessages(){
     try{
-      let msgs=[]; try{ if(window.Android && Android.getMessagesList){ const s=Android.getMessagesList(); msgs=JSON.parse(s); } }catch(e){}
-      if(!msgs.length) msgs=[{address:"فؤاد",body:"مرحبا كيف حالك",time:"12:30",read:0},{address:"0123456789",body:"تم شحن رصيدك 100 جنيه",time:"11:15",read:1},{address:"خدمة",body:"كود 123456",time:"10:00",read:0}];
+      let msgs=[]; let raw=""; try{ if(window.Android && Android.getMessagesList){ raw=Android.getMessagesList(); if(raw==="PERMISSION_DENIED"){ window.smsPermissionNeeded(); return; } msgs=JSON.parse(raw); } }catch(e){ if(raw==="PERMISSION_DENIED"){ window.smsPermissionNeeded(); return; } }
+      if(!msgs.length) msgs=[{address:"فؤاد",body:"مرحبا كيف حالك - رسالة تجريبية طويلة لاختبار السكرول في القائمة الجديدة لقراءة الرسائل بشكل صحيح وسلس",time:"12:30",read:0},{address:"0123456789",body:"تم شحن رصيدك 100 جنيه بنجاح - تفاصيل العملية ورقم العملية 123456789",time:"11:15",read:1},{address:"خدمة العملاء",body:"كود التفعيل الخاص بك هو 123456 - لا تشاركه مع أحد - صالح لمدة 5 دقائق",time:"10:00",read:0},{address:"البنك",body:"تم خصم 250 جنيه من حسابك - المتبقي 1250 جنيه - للاستفسار اتصل 19995",time:"09:30",read:1},{address:"فودافون",body:"باقتك ستنتهي غدا - جدد الآن باقة 100 جنيه واحصل على 10 جيجا هدية",time:"08:15",read:0}];
       messagesList.innerHTML=''; msgs.forEach(m=>{
         const div=document.createElement('div'); div.className='message-item'+(m.read==0?' unread':'');
         div.innerHTML='<div class="message-item-header"><span class="message-item-address">'+m.address+'</span><span class="message-item-time">'+m.time+'</span></div><div class="message-item-body">'+m.body+'</div>';
@@ -190,12 +201,15 @@ function attachEvents(){
   messagesDisplay?.addEventListener('click', trig);
   messagesDisplay?.addEventListener('pointerup', trig, {passive:false});
   document.getElementById('closeMessages')?.addEventListener('click',()=>messagesPopup.classList.remove('show'));
+  // لا تغلق عند السكرول داخل القائمة
+  messagesList?.addEventListener('pointerdown', (e)=>{ e.stopPropagation(); }, {passive:true});
   document.addEventListener('pointerdown', (e)=>{ if(!messagesPopup.contains(e.target) && e.target!==messagesDisplay && !messagesDisplay.contains(e.target)){ messagesPopup.classList.remove('show'); } }, {passive:true});
 }
 document.getElementById("dotsMenu")?.addEventListener("click",()=>document.getElementById("settingsPanel").classList.add("show"));
 document.getElementById("closeSettings")?.addEventListener("click",()=>document.getElementById("settingsPanel").classList.remove("show"));
 document.getElementById("closeNumpad")?.addEventListener("click",()=>numpadOverlay.classList.remove("show"));
 document.getElementById("micBtn")?.addEventListener("click",function(){
+  if(window.Android && Android.hasAudioPermission && !Android.hasAudioPermission()){ window.voicePermissionNeeded(); if(window.Android && Android.requestPermissions) Android.requestPermissions(); return; }
   if(isMicListening){ try{ if(window.Android&&Android.stopVoiceInput) Android.stopVoiceInput(); }catch(e){} isMicListening=false; this.classList.remove("listening","active"); document.querySelectorAll(".key.mic").forEach(k=>k.classList.remove("listening")); return; }
   if(!micEnabled) return; isMicListening=true; this.classList.add("listening","active"); document.querySelectorAll(".key.mic").forEach(k=>k.classList.add("listening"));
   try{ if(window.Android&&Android.startVoiceInput) Android.startVoiceInput(); }catch(e){ isMicListening=false; this.classList.remove("listening","active"); }
@@ -204,20 +218,16 @@ document.getElementById("micBtn")?.addEventListener("click",function(){
 document.getElementById("clipboardBtn")?.addEventListener("click",function(){ clipboardBar.classList.toggle("show"); updateClipboardBar(); this.classList.toggle("active", clipboardBar.classList.contains("show")); });
 document.getElementById("floatingBtn")?.addEventListener("click",function(){ isFloating=!isFloating; this.classList.toggle("active", isFloating); saveSet("floating", isFloating?"true":"false"); updateUI(); });
 document.querySelectorAll("#langOptions .option-btn").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll("#langOptions .option-btn").forEach(x=>x.classList.remove("active")); b.classList.add("active"); currentLang=b.dataset.lang; saveSet("language",currentLang); renderKeyboard();}));
-document.querySelectorAll("#themeOptions .option-btn").forEach(b=>b.addEventListener("click",()=>{
-  document.querySelectorAll("#themeOptions .option-btn").forEach(x=>x.classList.remove("active")); 
-  b.classList.add("active"); currentTheme=b.dataset.theme; saveSet("theme",currentTheme); updateUI(); playSound('regular');
-}));
+document.querySelectorAll("#themeOptions .option-btn").forEach(b=>b.addEventListener("click",()=>{ document.querySelectorAll("#themeOptions .option-btn").forEach(x=>x.classList.remove("active")); b.classList.add("active"); currentTheme=b.dataset.theme; saveSet("theme",currentTheme); updateUI(); playSound('regular'); }));
 document.querySelectorAll("#soundOptions .option-btn").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll("#soundOptions .option-btn").forEach(x=>x.classList.remove("active")); b.classList.add("active"); currentSound=b.dataset.sound; soundEnabled=currentSound!=="off"; saveSet("sound",currentSound); saveSet("soundEnabled",soundEnabled?"true":"false"); updateUI(); playSound('enter');}));
-document.querySelectorAll("#rgbOptions .option-btn").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll("#rgbOptions .option-btn").forEach(x=>x.classList.remove("active")); b.classList.add("active"); currentRGB=b.dataset.rgb; saveSet("rgb",currentRGB); updateUI();}));
+document.querySelectorAll("#rgbOptions .option-btn").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll("#rgbOptions .option-btn").forEach(x=>x.classList.remove("active")); b.classList.add("active"); currentRGB=b.dataset.rgb; saveSet("rgb",currentRGB); updateUI(); playSound('regular');}));
 document.querySelectorAll("#scaleOptions .option-btn").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll("#scaleOptions .option-btn").forEach(x=>x.classList.remove("active")); b.classList.add("active"); currentScale=b.dataset.scale; saveSet("scale",currentScale); updateUI();}));
 document.getElementById("micToggle")?.addEventListener("click",function(){micEnabled=!micEnabled; this.textContent="🎤 مايك: "+(micEnabled?"مفعل":"مطفي"); this.classList.toggle("active",micEnabled); saveSet("mic",micEnabled?"true":"false");});
 document.getElementById("floatingToggle")?.addEventListener("click",function(){isFloating=!isFloating; this.textContent="🪟 عائم: "+(isFloating?"مفعل":"مطفي"); this.classList.toggle("active",isFloating); saveSet("floating",isFloating?"true":"false"); updateUI();});
 document.getElementById("numpadToggle")?.addEventListener("click",function(){numpadEnabled=!numpadEnabled; this.textContent="🔢 نمباد: "+(numpadEnabled?"مفعل":"مطفي"); this.classList.toggle("active",numpadEnabled); saveSet("numpad",numpadEnabled?"true":"false");});
 document.getElementById("vibToggle")?.addEventListener("click",function(){vibEnabled=!vibEnabled; this.textContent="📳 اهتزاز: "+(vibEnabled?"مفعل":"مطفي"); saveSet("vib",vibEnabled?"true":"false"); if(vibEnabled) vibrate();});
-document.getElementById("instrToggle")?.addEventListener("click",function(){showInstructions=!showInstructions; this.textContent="👁️ إرشادات: "+(showInstructions?"مفعلة":"مخفية"); this.classList.toggle("active",showInstructions); saveSet("instructions",showInstructions?"true":"false"); updateUI();});
 document.getElementById("resetBtn")?.addEventListener("click",()=>{localStorage.clear(); location.reload();});
-currentLang=loadSet("language","ar"); currentTheme=loadSet("theme","liquid-neon"); currentSound=loadSet("sound","clicky"); currentRGB=loadSet("rgb","reactive"); currentScale=loadSet("scale","medium"); isFloating=loadSet("floating","false")==="true"; micEnabled=loadSet("mic","true")==="true"; soundEnabled=loadSet("soundEnabled","true")==="true"; showInstructions=loadSet("instructions","false")==="true";
+currentLang=loadSet("language","ar"); currentTheme=loadSet("theme","liquid-neon"); currentSound=loadSet("sound","clicky"); currentRGB=loadSet("rgb","reactive"); currentScale=loadSet("scale","medium"); isFloating=loadSet("floating","false")==="true"; micEnabled=loadSet("mic","true")==="true"; soundEnabled=loadSet("soundEnabled","true")==="true";
 document.querySelector('[data-lang="'+currentLang+'"]')?.classList.add("active");
 document.querySelector('[data-theme="'+currentTheme+'"]')?.classList.add("active");
 document.querySelector('[data-sound="'+currentSound+'"]')?.classList.add("active");

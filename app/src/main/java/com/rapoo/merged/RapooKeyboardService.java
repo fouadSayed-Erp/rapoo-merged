@@ -11,6 +11,12 @@ import android.widget.LinearLayout;
 import android.graphics.Color;
 import android.view.KeyEvent;
 import android.content.SharedPreferences;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.BatteryManager;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 public class RapooKeyboardService extends InputMethodService {
     private WebView webView;
     SharedPreferences prefs;
@@ -35,6 +41,28 @@ public class RapooKeyboardService extends InputMethodService {
         @JavascriptInterface public void moveCursor(int dx){ try{ InputConnection ic=getCurrentInputConnection(); if(ic==null) return; ExtractedTextRequest r=new ExtractedTextRequest(); r.token=0; ExtractedText et=ic.getExtractedText(r,0); if(et==null) return; int p=et.selectionStart+dx; if(p<0) p=0; if(p>et.text.length()) p=et.text.length(); ic.setSelection(p,p);}catch(Exception e){} }
         @JavascriptInterface public void saveSetting(String k,String v){ prefs.edit().putString(k,v).apply(); }
         @JavascriptInterface public String getSetting(String k,String d){ return prefs.getString(k,d); }
+        @JavascriptInterface public int getBatteryLevel(){
+            try{
+                IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+                Intent batteryStatus = registerReceiver(null, ifilter);
+                if(batteryStatus==null) return 29;
+                int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+                int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+                return (int)((level / (float)scale) * 100);
+            }catch(Exception e){ return 29; }
+        }
+        @JavascriptInterface public String getTime(){
+            try{
+                SimpleDateFormat sdf = new SimpleDateFormat("h:mm", new Locale("en"));
+                return sdf.format(new Date());
+            }catch(Exception e){ return "4:27"; }
+        }
+        @JavascriptInterface public String getTime24(){
+            try{
+                SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
+                return sdf.format(new Date());
+            }catch(Exception e){ return "04:27"; }
+        }
     }
     @Override public void onDestroy(){ super.onDestroy(); if(webView!=null){ webView.destroy(); webView=null; } }
 }

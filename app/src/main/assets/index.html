@@ -1,67 +1,61 @@
-<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Rapoo v3.0 MEGA</title><link rel="stylesheet" href="style.css"></head><body>
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Rapoo v3.1 SMART</title><link rel="stylesheet" href="style.css"></head><body>
 <div class="keyboard-container">
 <div class="header">
-<div class="dots" id="dotsMenu"><span></span><span></span><span></span></div>
-<div class="title">RAPOO • MERGED v3.0</div>
-<div class="header-actions"><button class="menu-btn" id="menuBtn">⋮</button><div class="lang-indicator" id="langIndicator">EN</div></div>
+<div class="title">RAPOO • MERGED v3.1</div>
+<div class="header-actions"><button class="menu-btn" id="menuBtn">⋮</button><div class="lang-indicator" id="langIndicator">AR</div></div>
 </div>
 <div class="suggestion-bar" id="suggestionBar"><div class="suggestion" style="opacity:.4">ابدأ الكتابة...</div></div>
 <div class="keyboard" id="keyboard"></div>
-<div class="footer"><div class="saved"><span>32% SAVED • 86mm</span></div><div class="version"><span style="width:5px;height:5px;background:#10b981;border-radius:50%;display:inline-block;box-shadow:0 0 6px #10b981"></span><span id="versionText">v3.0 MEGA</span></div></div>
+<div class="footer" id="footer">
+<div class="footer-left">
+<span class="battery" id="batteryDisplay">🔋 29%<span class="status-dot" style="background:#10b981"></span></span>
+<span class="time" id="timeDisplay">4:27</span>
+</div>
+<div class="footer-right">
+<span class="messages" id="messagesDisplay">💬 3 رسائل</span>
+<span id="versionText" style="font-size:8px;opacity:.6">v3.1 SMART</span>
+</div>
+</div>
 
 <div class="overlay" id="overlay"><div class="overlay-text" style="color:#c4b5fd;text-align:center;padding:20px">TRACKPAD<br><small style="font-size:10px">حرك صباعك</small></div></div>
 
 <div class="numpad-overlay" id="numpadOverlay">
-<div class="numpad-header"><span>🔢 NUMPAD - مثل التراك باد</span><button class="close-settings" id="closeNumpad">✕</button></div>
+<div class="numpad-header"><span>🔢 NUMPAD</span><button class="close-settings" id="closeNumpad">✕</button></div>
 <div class="numpad-grid" id="numpadGrid"></div>
-<div style="margin-top:10px;text-align:center;font-size:10px;color:#6b7280">دوس FN مطولاً لفتح النمباد • HOLD FN FOR NUMPAD</div>
 </div>
 
 <div class="mini-toast" id="miniToast"></div>
 
 <div class="settings-panel" id="settingsPanel">
-<div class="settings-header"><span class="settings-title">⚙️ إعدادات Rapoo v3.0 MEGA</span><button class="close-settings" id="closeSettings">✕</button></div>
+<div class="settings-header"><span class="settings-title">⚙️ إعدادات v3.1</span><button class="close-settings" id="closeSettings">✕</button></div>
 <div class="settings-content">
 <div class="setting-group"><span class="setting-label">🌐 اللغات - 12 لغة</span><div class="setting-grid triple" id="langOptions">
-<button class="option-btn" data-lang="en">EN</button><button class="option-btn" data-lang="ar">AR عربي</button><button class="option-btn" data-lang="ar_full">AR كامل</button>
+<button class="option-btn" data-lang="en">EN</button><button class="option-btn" data-lang="ar">AR</button><button class="option-btn" data-lang="ar_full">AR كامل</button>
 <button class="option-btn" data-lang="fr">FR</button><button class="option-btn" data-lang="de">DE</button><button class="option-btn" data-lang="es">ES</button>
-<button class="option-btn" data-lang="tr">TR</button><button class="option-btn" data-lang="ru">RU</button><button class="option-btn" data-lang="fa">FA فارسی</button>
-<button class="option-btn" data-lang="ur">UR اردو</button><button class="option-btn" data-lang="hi">HI हिन्दी</button><button class="option-btn" data-lang="it">IT</button>
+<button class="option-btn" data-lang="tr">TR</button><button class="option-btn" data-lang="ru">RU</button><button class="option-btn" data-lang="fa">FA</button>
+<button class="option-btn" data-lang="ur">UR</button><button class="option-btn" data-lang="hi">HI</button><button class="option-btn" data-lang="it">IT</button>
 </div></div>
-
-<div class="setting-group"><span class="setting-label">🎨 ثيمات - 14 ثيم</span><div class="setting-grid triple" id="themeOptions">
+<div class="setting-group"><span class="setting-label">🎨 ثيمات - 14</span><div class="setting-grid triple" id="themeOptions">
 <button class="option-btn" data-theme="dark">Dark</button><button class="option-btn" data-theme="light">Light</button><button class="option-btn" data-theme="amoled">Amoled</button>
 <button class="option-btn" data-theme="neon">Neon</button><button class="option-btn" data-theme="cyberpunk">Cyberpunk</button><button class="option-btn" data-theme="ocean">Ocean</button>
 <button class="option-btn" data-theme="forest">Forest</button><button class="option-btn" data-theme="sunset">Sunset</button><button class="option-btn" data-theme="dracula">Dracula</button>
 <button class="option-btn" data-theme="nord">Nord</button><button class="option-btn" data-theme="midnight">Midnight</button><button class="option-btn" data-theme="rapoo_purple">Purple</button>
 <button class="option-btn" data-theme="rgb_wave">RGB Wave</button><button class="option-btn" data-theme="monokai">Monokai</button>
 </div></div>
-
-<div class="setting-group"><span class="setting-label">🌈 RGB - 10 تأثيرات</span><div class="setting-grid triple" id="rgbOptions">
+<div class="setting-group"><span class="setting-label">🌈 RGB - 10</span><div class="setting-grid triple" id="rgbOptions">
 <button class="option-btn" data-rgb="off">Off</button><button class="option-btn" data-rgb="reactive">Reactive</button><button class="option-btn" data-rgb="wave">Wave</button>
-<button class="option-btn" data-rgb="ripple">Ripple</button><button class="option-btn" data-rgb="sparkle">Sparkle ✨</button><button class="option-btn" data-rgb="chase">Chase</button>
+<button class="option-btn" data-rgb="ripple">Ripple</button><button class="option-btn" data-rgb="sparkle">Sparkle</button><button class="option-btn" data-rgb="chase">Chase</button>
 <button class="option-btn" data-rgb="breathing">Breathing</button><button class="option-btn" data-rgb="gradient">Gradient</button><button class="option-btn" data-rgb="rainbow">Rainbow</button>
 <button class="option-btn" data-rgb="heatmap">Heatmap</button>
 </div></div>
-
-<div class="setting-group"><span class="setting-label">🔍 حجم الكيبورد</span><div class="setting-grid" id="scaleOptions">
-<button class="option-btn" data-scale="small">صغير S</button><button class="option-btn" data-scale="medium">متوسط M</button><button class="option-btn" data-scale="large">كبير L</button><button class="option-btn" data-scale="xlarge">كبير جداً XL</button>
+<div class="setting-group"><span class="setting-label">🔍 حجم</span><div class="setting-grid" id="scaleOptions">
+<button class="option-btn" data-scale="small">S</button><button class="option-btn" data-scale="medium">M</button><button class="option-btn" data-scale="large">L</button><button class="option-btn" data-scale="xlarge">XL</button>
 </div></div>
-
-<div class="setting-group"><span class="setting-label">🔊 صوت</span><div class="setting-grid" id="soundOptions">
-<button class="option-btn" data-sound="off">Off</button><button class="option-btn" data-sound="clicky">Clicky</button><button class="option-btn" data-sound="thocky">Thocky</button><button class="option-btn" data-sound="linear">Linear</button>
+<div class="setting-group"><span class="setting-label">🧠 تصحيح ذكي بمسافة</span><div class="setting-row">
+<button class="option-btn" id="autocorrectToggle">✅ تصحيح تلقائي بمسافة</button><button class="option-btn" id="suggestToggle">💡 اقتراحات ذكية</button>
 </div></div>
-
-<div class="setting-group"><span class="setting-label">✍️ ذكاء اصطناعي</span><div class="setting-row">
-<button class="option-btn" id="autocorrectToggle">✅ تصحيح ذكي</button><button class="option-btn" id="suggestToggle">💡 اقتراحات ذكية</button>
-</div></div>
-
-<div class="setting-group"><span class="setting-label">🔢 نمباد + تراك باد</span><div class="setting-row">
-<button class="option-btn" id="numpadToggle">🔢 نمباد: مفعل</button><button class="option-btn" id="vibToggle">📳 اهتزاز</button>
-</div></div>
-
 <div class="setting-group"><div class="setting-row">
-<button class="option-btn" id="resetBtn">🔄 إعادة ضبط</button>
+<button class="option-btn" id="numpadToggle">🔢 نمباد</button><button class="option-btn" id="vibToggle">📳 اهتزاز</button><button class="option-btn" id="resetBtn">🔄 ضبط</button>
 </div></div>
 </div>
 </div>

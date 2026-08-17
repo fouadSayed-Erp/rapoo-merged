@@ -21,15 +21,13 @@ import android.content.Context;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
-import java.util.ArrayList;
 public class RapooKeyboardService extends InputMethodService {
     private WebView webView;
     SharedPreferences prefs;
-    private ArrayList<String> clipboardHistory = new ArrayList<>();
     @Override public void onCreate(){ super.onCreate(); prefs=getSharedPreferences("rapoo_settings",MODE_PRIVATE); }
     @Override
     public View onCreateInputView(){
-        int h=(int)(420*getResources().getDisplayMetrics().density);
+        int h=(int)(520*getResources().getDisplayMetrics().density);
         LinearLayout c=new LinearLayout(this); c.setOrientation(LinearLayout.VERTICAL); c.setBackgroundColor(Color.parseColor("#15181a"));
         webView=new WebView(this); webView.setBackgroundColor(Color.TRANSPARENT);
         WebSettings s=webView.getSettings(); s.setJavaScriptEnabled(true); s.setDomStorageEnabled(true); s.setAllowFileAccess(true); s.setAllowFileAccessFromFileURLs(true); s.setAllowUniversalAccessFromFileURLs(true); s.setLoadWithOverviewMode(true); s.setUseWideViewPort(true); s.setCacheMode(WebSettings.LOAD_NO_CACHE);
@@ -47,12 +45,10 @@ public class RapooKeyboardService extends InputMethodService {
         @JavascriptInterface public void moveCursor(int dx){ try{ InputConnection ic=getCurrentInputConnection(); if(ic==null) return; ExtractedTextRequest r=new ExtractedTextRequest(); r.token=0; ExtractedText et=ic.getExtractedText(r,0); if(et==null) return; int p=et.selectionStart+dx; if(p<0) p=0; if(p>et.text.length()) p=et.text.length(); ic.setSelection(p,p);}catch(Exception e){} }
         @JavascriptInterface public void saveSetting(String k,String v){ prefs.edit().putString(k,v).apply(); }
         @JavascriptInterface public String getSetting(String k,String d){ return prefs.getString(k,d); }
-        @JavascriptInterface public int getBatteryLevel(){ try{ IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED); Intent batteryStatus = registerReceiver(null, ifilter); if(batteryStatus==null) return 98; int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1); int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1); return (int)((level / (float)scale) * 100); }catch(Exception e){ return 98; } }
-        @JavascriptInterface public String getTime(){ try{ SimpleDateFormat sdf = new SimpleDateFormat("h:mm", new Locale("en")); return sdf.format(new Date()); }catch(Exception e){ return "8:04"; } }
+        @JavascriptInterface public int getBatteryLevel(){ try{ IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED); Intent batteryStatus = registerReceiver(null, ifilter); if(batteryStatus==null) return 73; int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1); int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1); return (int)((level / (float)scale) * 100); }catch(Exception e){ return 73; } }
+        @JavascriptInterface public String getTime(){ try{ SimpleDateFormat sdf = new SimpleDateFormat("h:mm", new Locale("en")); return sdf.format(new Date()); }catch(Exception e){ return "12:41"; } }
         @JavascriptInterface public void startVoiceInput(){ try{ Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH); intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM); intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); startActivity(intent); }catch(Exception e){} }
         @JavascriptInterface public String getClipboardText(){ try{ ClipboardManager cm = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE); if(cm!=null && cm.hasPrimaryClip()){ ClipData.Item item = cm.getPrimaryClip().getItemAt(0); if(item!=null) return item.getText().toString(); } }catch(Exception e){} return ""; }
-        @JavascriptInterface public void saveToClipboardHistory(String text){ try{ if(text!=null && text.length()>0 && text.length()<200){ if(!clipboardHistory.contains(text)){ clipboardHistory.add(0, text); if(clipboardHistory.size()>20) clipboardHistory.remove(clipboardHistory.size()-1); } } }catch(Exception e){} }
-        @JavascriptInterface public String getClipboardHistory(){ try{ StringBuilder sb=new StringBuilder(); for(int i=0;i<clipboardHistory.size();i++){ if(i>0) sb.append("|||"); sb.append(clipboardHistory.get(i).replace("|","")); } return sb.toString(); }catch(Exception e){ return ""; } }
     }
     @Override public void onDestroy(){ super.onDestroy(); if(webView!=null){ webView.destroy(); webView=null; } }
 }

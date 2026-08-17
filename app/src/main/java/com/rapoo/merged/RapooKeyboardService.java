@@ -21,6 +21,8 @@ import android.content.ClipData;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -37,21 +39,12 @@ public class RapooKeyboardService extends InputMethodService {
             if(SpeechRecognizer.isRecognitionAvailable(this)){
                 speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
                 speechRecognizer.setRecognitionListener(new RecognitionListener(){
-                    @Override public void onReadyForSpeech(Bundle params){
-                        try{ webView.post(()-> webView.evaluateJavascript("window.voiceReady()",null)); }catch(Exception e){}
-                    }
-                    @Override public void onBeginningOfSpeech(){
-                        try{ webView.post(()-> webView.evaluateJavascript("window.voiceBegin()",null)); }catch(Exception e){}
-                    }
+                    @Override public void onReadyForSpeech(Bundle params){ try{ webView.post(()-> webView.evaluateJavascript("window.voiceReady()",null)); }catch(Exception e){} }
+                    @Override public void onBeginningOfSpeech(){ try{ webView.post(()-> webView.evaluateJavascript("window.voiceBegin()",null)); }catch(Exception e){} }
                     @Override public void onRmsChanged(float rmsdB){}
                     @Override public void onBufferReceived(byte[] buffer){}
-                    @Override public void onEndOfSpeech(){
-                        try{ webView.post(()-> webView.evaluateJavascript("window.voiceEnd()",null)); }catch(Exception e){}
-                    }
-                    @Override public void onError(int error){ 
-                        isListening=false; 
-                        try{ webView.post(()-> webView.evaluateJavascript("window.voiceError("+error+")",null)); }catch(Exception e){} 
-                    }
+                    @Override public void onEndOfSpeech(){ try{ webView.post(()-> webView.evaluateJavascript("window.voiceEnd()",null)); }catch(Exception e){} }
+                    @Override public void onError(int error){ isListening=false; try{ webView.post(()-> webView.evaluateJavascript("window.voiceError("+error+")",null)); }catch(Exception e){} }
                     @Override public void onResults(Bundle results){
                         isListening=false;
                         try{
@@ -65,9 +58,7 @@ public class RapooKeyboardService extends InputMethodService {
                             } else {
                                 try{ webView.post(()-> webView.evaluateJavascript("window.voiceNoResult()",null)); }catch(Exception e){}
                             }
-                        }catch(Exception e){
-                            try{ webView.post(()-> webView.evaluateJavascript("window.voiceError(-1)",null)); }catch(Exception ex){}
-                        }
+                        }catch(Exception e){ try{ webView.post(()-> webView.evaluateJavascript("window.voiceError(-1)",null)); }catch(Exception ex){} }
                     }
                     @Override public void onPartialResults(Bundle partialResults){
                         try{
@@ -161,10 +152,8 @@ public class RapooKeyboardService extends InputMethodService {
                 int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1); 
                 int plugged = batteryStatus.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1);
                 boolean isCharging = plugged==BatteryManager.BATTERY_PLUGGED_AC || plugged==BatteryManager.BATTERY_PLUGGED_USB || plugged==BatteryManager.BATTERY_PLUGGED_WIRELESS;
-                int pct = (int)((level / (float)scale) * 100);
-                // save charging state
                 prefs.edit().putBoolean("isCharging", isCharging).apply();
-                return pct;
+                return (int)((level / (float)scale) * 100);
             }catch(Exception e){ return 73; } 
         }
         @JavascriptInterface public boolean isCharging(){
@@ -180,12 +169,7 @@ public class RapooKeyboardService extends InputMethodService {
             try{ 
                 SimpleDateFormat sdf = new SimpleDateFormat("h:mm a", new Locale("en")); 
                 return sdf.format(new Date()); 
-            }catch(Exception e){ 
-                try{
-                    SimpleDateFormat sdf2 = new SimpleDateFormat("HH:mm", Locale.getDefault());
-                    return sdf2.format(new Date());
-                }catch(Exception ex){ return "12:41 PM"; }
-            } 
+            }catch(Exception e){ return "12:41 PM"; } 
         }
         @JavascriptInterface public String getTime24(){ 
             try{ 
@@ -193,7 +177,6 @@ public class RapooKeyboardService extends InputMethodService {
                 return sdf.format(new Date()); 
             }catch(Exception e){ return "12:41"; } 
         }
-        // رسائل فعلية - عدد غير مقروءة
         @JavascriptInterface public int getUnreadMessages(){
             try{
                 Uri uri = Uri.parse("content://sms/inbox");
@@ -202,25 +185,45 @@ public class RapooKeyboardService extends InputMethodService {
                 int count = c.getCount();
                 c.close();
                 return count;
-            }catch(Exception e){
-                // بدون صلاحية READ_SMS
-                return -1;
-            }
+            }catch(Exception e){ return -1; }
         }
-        @JavascriptInterface public String getLastMessage(){
+        @JavascriptInterface public int getTotalMessages(){
             try{
                 Uri uri = Uri.parse("content://sms/inbox");
-                Cursor c = getContentResolver().query(uri, new String[]{"body"}, null, null, "date DESC LIMIT 1");
-                if(c==null) return "";
-                if(c.moveToFirst()){
-                    String body = c.getString(0);
-                    c.close();
-                    if(body.length()>20) body=body.substring(0,20)+"...";
-                    return body;
+                Cursor c = getContentResolver().query(uri, new String[]{"_id"}, null, null, null);
+                if(c==null) return 0;
+                int count = c.getCount();
+                c.close();
+                return count;
+            }catch(Exception e){ return -1; }
+        }
+        @JavascriptInterface public String getMessagesList(){
+            try{
+                JSONArray arr = new JSONArray();
+                Uri uri = Uri.parse("content://sms/inbox");
+                Cursor c = getContentResolver().query(uri, new String[]{"address","body","date","read"}, null, null, "date DESC LIMIT 5");
+                if(c==null) return "[]";
+                SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
+                while(c.moveToNext()){
+                    try{
+                        JSONObject obj = new JSONObject();
+                        String address = c.getString(0);
+                        String body = c.getString(1);
+                        long date = c.getLong(2);
+                        int read = c.getInt(3);
+                        if(address==null) address="غير معروف";
+                        if(body==null) body="";
+                        if(body.length()>35) body=body.substring(0,35)+"...";
+                        obj.put("address", address);
+                        obj.put("body", body);
+                        obj.put("time", sdf.format(new Date(date)));
+                        obj.put("read", read);
+                        arr.put(obj);
+                    }catch(Exception ex){}
                 }
                 c.close();
-                return "";
-            }catch(Exception e){ return ""; }
+                return arr.toString();
+            }catch(Exception e){ return "[]"; }
         }
         @JavascriptInterface public void startVoiceInput(){ 
             try{ 
@@ -229,13 +232,12 @@ public class RapooKeyboardService extends InputMethodService {
                     Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH); 
                     intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM); 
                     intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ar-EG");
-                    intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "ar-EG");
                     intent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, getPackageName());
                     intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
                     intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
                     speechRecognizer.startListening(intent); 
                 } 
-            }catch(Exception e){ isListening=false; try{ webView.post(()-> webView.evaluateJavascript("window.voiceError(-2)",null)); }catch(Exception ex){} } 
+            }catch(Exception e){ isListening=false; } 
         }
         @JavascriptInterface public void stopVoiceInput(){ try{ if(speechRecognizer!=null && isListening){ speechRecognizer.stopListening(); isListening=false; } }catch(Exception e){ isListening=false; } }
         @JavascriptInterface public String getClipboardText(){ try{ ClipboardManager cm = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE); if(cm!=null && cm.hasPrimaryClip()){ ClipData.Item item = cm.getPrimaryClip().getItemAt(0); if(item!=null && item.getText()!=null) return item.getText().toString(); } }catch(Exception e){} return ""; }

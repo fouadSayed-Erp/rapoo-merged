@@ -1,25 +1,58 @@
-// v2.1 - Fixed Bar + Autocorrect
+// v2.2 TURBO - Fast + Sentence Correct + Smooth RGB
 const keyboardEl=document.getElementById('keyboard'),suggestionBar=document.getElementById('suggestionBar'),langIndicator=document.getElementById('langIndicator'),versionText=document.getElementById('versionText'),miniToast=document.getElementById('miniToast');
 let isShift=false,isCaps=false,isAlt=false,isCtrl=false,isTrackpadActive=false,isFullTrackpad=false,holdTimer=null,lastMoveX=0,startX=0,startY=0;
 let currentLang='en',currentTheme='dark',currentSound='clicky',currentRGB='reactive',vibEnabled=true,soundEnabled=true,autocorrectEnabled=true,suggestEnabled=true;
-let currentWord='',wordStartPos=0;
+let currentWord='',lastWord='',sentenceBuffer='';
 
-// قواميس تصحيح
+// قواميس مطورة + جمل
 const dictionaries={
-  en:["the","be","to","of","and","a","in","that","have","i","it","for","not","on","with","he","as","you","do","at","this","but","his","by","from","they","we","say","her","she","or","an","will","my","one","all","would","there","their","what","so","up","out","if","about","who","get","which","go","me","when","make","can","like","time","no","just","him","know","take","people","into","year","your","good","some","could","them","see","other","than","then","now","look","only","come","its","over","think","also","back","after","use","two","how","our","work","first","well","way","even","new","want","because","any","these","give","day","most","us","hello","world","keyboard","android","google","rapoo","merged","space","trackpad","settings","theme","language","sound","mechanical","rgb","ultimate"],
-  ar:["السلام","عليكم","مرحبا","كيف","حالك","انا","انت","هو","هي","نحن","انتم","هذا","هذه","ذلك","التي","الذي","في","من","الى","على","عن","مع","بعد","قبل","تحت","فوق","يمين","شمال","كتاب","قلم","بيت","مدرسة","عمل","وقت","يوم","سنة","موبايل","كيبورد","مسافة","تراك","باد","اعدادات","لغة","ثيم","صوت","ميكانيكي","الوان","تصحيح","كلمات","شكرا","حبيبي","تمام","ظبط","تمام","الله","محمد","مصر","عربي"]
+  en:{
+    words:["the","be","to","of","and","a","in","that","have","i","it","for","not","on","with","he","as","you","do","at","this","but","his","by","from","they","we","say","her","she","or","an","will","my","one","all","would","there","their","what","so","up","out","if","about","who","get","which","go","me","when","make","can","like","time","no","just","him","know","take","people","into","year","your","good","some","could","them","see","other","than","then","now","look","only","come","its","over","think","also","back","after","use","two","how","our","work","first","well","way","even","new","want","because","any","these","give","day","most","us","hello","world","keyboard","android","google","rapoo","merged","space","trackpad","settings","theme","language","sound","mechanical","rgb","ultimate","fast","optimized","quick","delete","sentence","correction","thanks","please","sorry","today","tomorrow","yesterday","morning","night","good","great","awesome","love","happy","sad"],
+    sentences:{
+      "hello":"Hello there!",
+      "how are you":"How are you doing?",
+      "thank you":"Thank you so much!",
+      "good morning":"Good morning! Have a great day!",
+      "i am":"I am doing great!",
+      "whats up":"What's up?",
+      "lol":"LOL that's funny!",
+      "brb":"Be right back!",
+      "omw":"On my way!",
+      "teh":"the",
+      "adn":"and",
+      "becuase":"because",
+      "recieve":"receive",
+      "seperate":"separate",
+      "occured":"occurred"
+    }
+  },
+  ar:{
+    words:["السلام","عليكم","مرحبا","كيف","حالك","انا","انت","هو","هي","نحن","هذا","هذه","ذلك","في","من","الى","على","عن","مع","بعد","قبل","كتاب","قلم","بيت","مدرسة","عمل","وقت","يوم","سنة","موبايل","كيبورد","مسافة","تراك","باد","اعدادات","لغة","ثيم","صوت","الوان","شكرا","حبيبي","تمام","ظبط","الله","محمد","مصر","عربي","صباح","الخير","مساء","حلو","جميل","بحبك","وحشتيني","عامل","ايه","اخبارك","كويس","الحمدلله"],
+    sentences:{
+      "السلام عليكم":"السلام عليكم ورحمة الله وبركاته",
+      "صباح الخير":"صباح الخير يا حبيبي",
+      "مساء الخير":"مساء الخير يا جميل",
+      "عامل ايه":"عامل ايه يا غالي؟",
+      "شكرا":"شكرا جزيلا يا حبيبي",
+      "حبيبي":"حبيبي الغالي",
+      "تمام":"تمام ظبط كده",
+      "الله":"الله اكبر",
+      "ان شاء الله":"إن شاء الله",
+      "ما شاء الله":"ما شاء الله"
+    }
+  }
 };
 
 const layouts={
   en:{
-    row1:[{k:'`',s:'~'},{k:'1',s:'!'},{k:'2',s:'@'},{k:'3',s:'#'},{k:'4',s:'$'},{k:'5',s:'%'},{k:'6',s:'^'},{k:'7',s:'&'},{k:'8',s:'*'},{k:'9',s:'('},{k:'0',s:')'},{k:'-',s:'_'},{k:'=',s:'+'},{k:'Backspace',d:'⌫',c:'del'}],
+    row1:[{k:'`',s:'~'},{k:'1',s:'!'},{k:'2',s:'@'},{k:'3',s:'#'},{k:'4',s:'$'},{k:'5',s:'%'},{k:'6',s:'^'},{k:'7',s:'&'},{k:'8',s:'*'},{k:'9',s:'('},{k:'0',s:')'},{k:'-',s:'_'},{k:'=',s:'+'},{k:'Backspace',d:'⌫',c:'del',id:'delKey'}],
     row2:[{k:'tab',d:'tab',c:'fn-key small'},{k:'q'},{k:'w'},{k:'e'},{k:'r'},{k:'t'},{k:'y'},{k:'u'},{k:'i'},{k:'o'},{k:'p'},{k:'[',s:'{'},{k:']',s:'}'},{k:'\\',s:'|'}],
     row3:[{k:'caps',d:'caps',c:'fn-key small',id:'capsKey'},{k:'a'},{k:'s'},{k:'d'},{k:'f'},{k:'g'},{k:'h'},{k:'j'},{k:'k'},{k:'l'},{k:';',s:':'},{k:"'",s:'"'},{k:'enter',d:'↵',c:'small'}],
     row4:[{k:'shift',d:'shift',c:'fn-key small',id:'shiftKey'},{k:'z'},{k:'x'},{k:'c'},{k:'v'},{k:'b'},{k:'n'},{k:'m'},{k:',',s:'<'},{k:'.',s:'>'},{k:'/',s:'?'},{k:'shift',d:'shift',c:'fn-key small',id:'shiftKey2'}],
     row5:[{k:'fn',d:'Fn',id:'fnKey'},{k:'ctrl',d:'ctrl',id:'ctrlKey'},{k:'alt',d:'alt',id:'altKey'},{k:'space',d:'SPACE',c:'space-trackpad',id:'spaceTrackpad',special:true},{k:'alt',d:'alt'},{k:'ctrl',d:'ctrl'},{k:'arrowleft',d:'←'},{k:'arrowupdown',d:'↑↓'},{k:'arrowright',d:'→'}]
   },
   ar:{
-    row1:[{k:'`',s:'~'},{k:'1',s:'!'},{k:'2',s:'@'},{k:'3',s:'#'},{k:'4',s:'$'},{k:'5',s:'%'},{k:'6',s:'^'},{k:'7',s:'&'},{k:'8',s:'*'},{k:'9',s:'('},{k:'0',s:')'},{k:'-',s:'_'},{k:'=',s:'+'},{k:'Backspace',d:'⌫',c:'del'}],
+    row1:[{k:'`',s:'~'},{k:'1',s:'!'},{k:'2',s:'@'},{k:'3',s:'#'},{k:'4',s:'$'},{k:'5',s:'%'},{k:'6',s:'^'},{k:'7',s:'&'},{k:'8',s:'*'},{k:'9',s:'('},{k:'0',s:')'},{k:'-',s:'_'},{k:'=',s:'+'},{k:'Backspace',d:'⌫',c:'del',id:'delKey'}],
     row2:[{k:'tab',d:'tab',c:'fn-key small'},{k:'ض'},{k:'ص'},{k:'ث'},{k:'ق'},{k:'ف'},{k:'غ'},{k:'ع'},{k:'ه'},{k:'خ'},{k:'ح'},{k:'ج'},{k:'د'},{k:'\\',s:'|'}],
     row3:[{k:'caps',d:'caps',c:'fn-key small',id:'capsKey'},{k:'ش'},{k:'س'},{k:'ي'},{k:'ب'},{k:'ل'},{k:'ا'},{k:'ت'},{k:'ن'},{k:'م'},{k:'ك'},{k:'ط'},{k:'enter',d:'↵',c:'small'}],
     row4:[{k:'shift',d:'shift',c:'fn-key small',id:'shiftKey'},{k:'ئ'},{k:'ء'},{k:'ؤ'},{k:'ر'},{k:'لا'},{k:'ى'},{k:'ة'},{k:'و'},{k:'ز'},{k:'ظ'},{k:'shift',d:'shift',c:'fn-key small',id:'shiftKey2'}],
@@ -27,7 +60,6 @@ const layouts={
   }
 };
 Object.assign(layouts,{fr:layouts.en,de:layouts.en});
-
 const KC={F1:131,F2:132,F3:133,F4:134,F5:135,F6:136,F7:137,F8:138,F9:139,F10:140,F11:141,F12:142,ESC:111,TAB:61,ENTER:66,LEFT:21,RIGHT:22,UP:19,DOWN:20};
 
 let audioCtx=null;
@@ -36,26 +68,28 @@ function playSound(){
   if(!soundEnabled||currentSound==='off') return;
   try{
     const ctx=getCtx(),now=ctx.currentTime;
-    if(currentSound==='clicky'){const o=ctx.createOscillator(),g=ctx.createGain(); o.type='square'; o.frequency.setValueAtTime(2800+Math.random()*800,now); g.gain.setValueAtTime(0.25,now); g.gain.exponentialRampToValueAtTime(0.01,now+0.07); o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now+0.07);}
-    else if(currentSound==='thocky'){const o=ctx.createOscillator(),g=ctx.createGain(); o.type='sine'; o.frequency.setValueAtTime(110,now); g.gain.setValueAtTime(0.45,now); g.gain.exponentialRampToValueAtTime(0.01,now+0.22); o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now+0.22);}
-    else if(currentSound==='linear'){const o=ctx.createOscillator(),g=ctx.createGain(); o.type='sine'; o.frequency.setValueAtTime(550,now); g.gain.setValueAtTime(0.18,now); g.gain.linearRampToValueAtTime(0,now+0.09); o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now+0.09);}
-    else{const o=ctx.createOscillator(),g=ctx.createGain(); o.type='square'; o.frequency.setValueAtTime(1400,now); o.frequency.exponentialRampToValueAtTime(90,now+0.11); g.gain.setValueAtTime(0.35,now); g.gain.exponentialRampToValueAtTime(0.01,now+0.11); o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now+0.11);}
+    const g=ctx.createGain(); g.gain.setValueAtTime(0.28,now); g.gain.exponentialRampToValueAtTime(0.01,now+0.09);
+    const o=ctx.createOscillator();
+    if(currentSound==='clicky'){o.type='square'; o.frequency.setValueAtTime(3200,now);}
+    else if(currentSound==='thocky'){o.type='sine'; o.frequency.setValueAtTime(110,now); g.gain.setValueAtTime(0.5,now); g.gain.exponentialRampToValueAtTime(0.01,now+0.2);}
+    else{o.type='sine'; o.frequency.setValueAtTime(600,now);}
+    o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now+0.2);
   }catch(e){}
 }
 
 function commit(t){ if(window.Android&&Android.commitText) Android.commitText(t); }
 function del(){ if(window.Android&&Android.deleteText) Android.deleteText(); }
 function delN(n){ if(window.Android&&Android.deleteN) Android.deleteN(n); }
+function delWord(){ if(window.Android&&Android.deleteWord) Android.deleteWord(); }
 function sendKey(c){ if(window.Android&&Android.sendKey) Android.sendKey(c); }
 function sendKeyMod(c,s,ctrl,alt){ if(window.Android&&Android.sendKeyWithModifiers) Android.sendKeyWithModifiers(c,!!s,!!ctrl,!!alt); }
 function moveCursor(dx){ if(window.Android&&Android.moveCursor) Android.moveCursor(dx); }
 function saveSet(k,v){ try{ localStorage.setItem('rapoo_'+k,v); if(window.Android&&Android.saveSetting) Android.saveSetting(k,v);}catch(e){} }
 function loadSet(k,d){ try{ const v=localStorage.getItem('rapoo_'+k); if(v!==null) return v; if(window.Android&&Android.getSetting){const av=Android.getSetting(k,d); if(av) return av;}}catch(e){} return d; }
-function vibrate(){ if(!vibEnabled) return; try{if(navigator.vibrate) navigator.vibrate(10)}catch(e){} }
+function vibrate(){ if(!vibEnabled) return; try{if(navigator.vibrate) navigator.vibrate(8)}catch(e){} }
 function showToast(msg){
-  miniToast.textContent=msg;
-  miniToast.classList.add('show');
-  setTimeout(()=>miniToast.classList.remove('show'),1500);
+  miniToast.textContent=msg; miniToast.classList.add('show');
+  setTimeout(()=>miniToast.classList.remove('show'),1400);
 }
 
 function levenshtein(a,b){
@@ -63,79 +97,110 @@ function levenshtein(a,b){
   for(let i=1;i<=b.length;i++){for(let j=1;j<=a.length;j++){if(b.charAt(i-1)==a.charAt(j-1)) m[i][j]=m[i-1][j-1]; else m[i][j]=Math.min(m[i-1][j-1]+1,Math.min(m[i][j-1]+1,m[i-1][j]+1))}} return m[b.length][a.length];
 }
 
-function getSuggestions(word){
-  if(!suggestEnabled||!word||word.length<2) return [];
+function getSuggestions(word,sentence){
+  if(!suggestEnabled||!word) return {words:[],sentences:[]};
   const dict=dictionaries[currentLang]||dictionaries.en;
   const lower=word.toLowerCase();
-  let results=[];
-  // exact prefix
-  dict.forEach(w=>{
-    if(w.toLowerCase().startsWith(lower) && w.toLowerCase()!==lower) results.push({word:w,score:0});
+  const senLower=(sentence||'').toLowerCase().trim();
+  
+  let wordSugs=[],sentenceSugs=[];
+  
+  // جمل كاملة
+  if(dict.sentences){
+    for(let k in dict.sentences){
+      if(senLower.endsWith(k.toLowerCase()) || lower===k.toLowerCase() || k.toLowerCase().includes(lower)){
+        sentenceSugs.push({text:dict.sentences[k],orig:k});
+      }
+    }
+    // لو الجملة الحالية تطابق مفتاح
+    if(dict.sentences[senLower]) sentenceSugs.unshift({text:dict.sentences[senLower],orig:senLower});
+  }
+  
+  // كلمات
+  dict.words.forEach(w=>{
+    if(w.toLowerCase().startsWith(lower)&&w.toLowerCase()!==lower) wordSugs.push({word:w,score:0});
   });
-  // fuzzy
-  if(results.length<3){
-    dict.forEach(w=>{
-      const dist=levenshtein(lower,w.toLowerCase());
-      if(dist<=2 && dist>0) results.push({word:w,score:dist});
+  if(wordSugs.length<4){
+    dict.words.forEach(w=>{
+      const d=levenshtein(lower,w.toLowerCase());
+      if(d<=2&&d>0) wordSugs.push({word:w,score:d});
     });
   }
-  results.sort((a,b)=>a.score-b.score);
-  // unique
+  wordSugs.sort((a,b)=>a.score-b.score);
   const uniq=[]; const seen=new Set();
-  for(let r of results){ if(!seen.has(r.word.toLowerCase())){ seen.add(r.word.toLowerCase()); uniq.push(r.word);} if(uniq.length>=5) break; }
-  return uniq;
+  for(let r of wordSugs){ if(!seen.has(r.word.toLowerCase())){seen.add(r.word.toLowerCase()); uniq.push(r.word);} if(uniq.length>=4) break; }
+  
+  return {words:uniq, sentences:sentenceSugs.slice(0,2)};
 }
 
 function updateSuggestions(){
-  if(!suggestEnabled){ suggestionBar.innerHTML='<div class="suggestion" style="opacity:0.3">الاقتراحات مطفية</div>'; return; }
-  if(!currentWord){
-    suggestionBar.innerHTML='<div class="suggestion" style="opacity:0.4">ابدأ الكتابة...</div>';
+  if(!suggestEnabled){ suggestionBar.innerHTML='<div class="suggestion" style="opacity:.3">الاقتراحات مطفية</div>'; return; }
+  if(!currentWord && !sentenceBuffer){
+    suggestionBar.innerHTML='<div class="suggestion" style="opacity:.4">ابدأ الكتابة...</div>';
     return;
   }
-  const sugs=getSuggestions(currentWord);
-  if(sugs.length===0){
-    if(currentWord.length>3) suggestionBar.innerHTML=`<div class="suggestion correction">${currentWord}</div><div class="suggestion" style="opacity:0.5">لا يوجد تصحيح</div>`;
-    else suggestionBar.innerHTML=`<div class="suggestion active">${currentWord}</div>`;
-    return;
-  }
-  let html=`<div class="suggestion active">${currentWord}</div>`;
-  sugs.forEach((s,i)=>{
-    const isCorrection = s.toLowerCase()!==currentWord.toLowerCase() && s.toLowerCase().startsWith(currentWord.toLowerCase().slice(0,2))===false;
-    html+=`<div class="suggestion ${isCorrection?'correction':''}" data-suggest="${s}">${s}</div>`;
+  const fullSentence=(sentenceBuffer+' '+currentWord).trim();
+  const sugs=getSuggestions(currentWord,fullSentence);
+  let html='';
+  // الجملة الأصلية
+  if(currentWord) html+=`<div class="suggestion active">${currentWord}</div>`;
+  
+  // اقتراحات جمل كاملة مع مسافة تلقائي
+  sugs.sentences.forEach(s=>{
+    html+=`<div class="suggestion sentence" data-suggest="${s.text}" data-is-sentence="1">✨ ${s.text}</div>`;
   });
+  
+  // كلمات مصححة
+  sugs.words.forEach(w=>{
+    const isCorr = w.toLowerCase()!==currentWord.toLowerCase();
+    html+=`<div class="suggestion ${isCorr?'correction':''}" data-suggest="${w}"> ${w}</div>`;
+  });
+  
+  if(!html) html='<div class="suggestion" style="opacity:.5">لا يوجد اقتراح</div>';
   suggestionBar.innerHTML=html;
+  
   suggestionBar.querySelectorAll('[data-suggest]').forEach(el=>{
     el.addEventListener('click',()=>{
       const sug=el.dataset.suggest;
-      applySuggestion(sug);
+      const isSentence=el.dataset.isSentence==='1';
+      applySuggestion(sug,isSentence);
     });
   });
 }
 
-function applySuggestion(sug){
-  if(!currentWord) return;
-  delN(currentWord.length);
+function applySuggestion(sug,isSentence){
+  if(!currentWord && !isSentence) return;
+  const len = isSentence ? (sentenceBuffer+' '+currentWord).trim().length : currentWord.length;
+  if(len>0) delN(len);
   setTimeout(()=>{
-    commit(sug);
+    commit(sug+' '); // مسافة تلقائي للاستكمال
     currentWord='';
+    if(isSentence) sentenceBuffer='';
+    else sentenceBuffer+= (sentenceBuffer?' ':'')+sug;
+    if(sentenceBuffer.split(' ').length>6) sentenceBuffer='';
     updateSuggestions();
     playSound();
-  },30);
+    showToast('✓ '+sug);
+  },40);
 }
 
 function onCharTyped(ch){
-  if(/[a-zA-Z\u0600-\u06FF]/.test(ch)){
+  if(/[a-zA-Z\u0600-\u06FF0-9]/.test(ch)){
     currentWord+=ch;
-  } else if(ch===' '||ch==='\n'||/[.,!?;:]/.test(ch)){
+    sentenceBuffer+=ch;
+  } else if(ch===' '){
+    lastWord=currentWord;
+    currentWord='';
+    sentenceBuffer+=' ';
+    if(sentenceBuffer.length>100) sentenceBuffer=sentenceBuffer.slice(-60);
+  } else if(/[\n.,!?;:]/.test(ch)){
     if(autocorrectEnabled && currentWord){
-      const sugs=getSuggestions(currentWord);
-      if(sugs.length>0 && sugs[0].toLowerCase()!==currentWord.toLowerCase()){
-        // تصحيح تلقائي لو الفرق حرف واحد
-        const dist=levenshtein(currentWord.toLowerCase(),sugs[0].toLowerCase());
-        if(dist===1 && currentWord.length>3){
+      const sugs=getSuggestions(currentWord,sentenceBuffer);
+      if(sugs.words.length>0){
+        const best=sugs.words[0];
+        if(levenshtein(currentWord.toLowerCase(),best.toLowerCase())===1 && currentWord.length>3){
           delN(currentWord.length);
-          setTimeout(()=>commit(sugs[0]+ch),30);
-          showToast(`✓ ${currentWord} → ${sugs[0]}`);
+          setTimeout(()=>{commit(best+ch); showToast(`✓ ${currentWord} → ${best}`);},40);
           currentWord='';
           updateSuggestions();
           return;
@@ -143,13 +208,31 @@ function onCharTyped(ch){
       }
     }
     currentWord='';
+    sentenceBuffer+=ch;
   }
   updateSuggestions();
 }
-
 function onDelete(){
   if(currentWord.length>0) currentWord=currentWord.slice(0,-1);
+  if(sentenceBuffer.length>0) sentenceBuffer=sentenceBuffer.slice(0,-1);
   updateSuggestions();
+}
+
+// RGB Wave المحسن
+function triggerRGBWave(centerEl){
+  if(currentRGB==='off') return;
+  const allKeys=[...document.querySelectorAll('.key:not(.space-trackpad)')];
+  const idx=allKeys.indexOf(centerEl);
+  if(idx===-1) return;
+  allKeys.forEach((k,i)=>{
+    const dist=Math.abs(i-idx);
+    if(dist<=3){
+      setTimeout(()=>{
+        k.classList.add('rgb-wave');
+        setTimeout(()=>k.classList.remove('rgb-wave'),600);
+      },dist*60);
+    }
+  });
 }
 
 function renderKeyboard(){
@@ -161,7 +244,7 @@ function renderKeyboard(){
     html+=`<div class="row ${rn==='row5'?'bottom-row':''}">`;
     row.forEach(item=>{
       if(item.special){
-        html+=`<div class="key ${item.c||''}" id="${item.id||''}" data-key="${item.k}"><div class="space-content"><span>${item.d}</span><div class="track-icon">▣</div></div><div class="space-hint">HOLD 400ms • ${currentLang==='ar'?'اسحب للتحريك':'SLIDE'} • 32%</div><div class="trackpad-grid" id="trackpadGrid"></div><div class="track-dot" id="trackDot"></div></div>`;
+        html+=`<div class="key ${item.c||''}" id="${item.id||''}" data-key="${item.k}"><div class="space-content"><span>${item.d}</span><div class="track-icon">▣</div></div><div class="space-hint">HOLD 400ms • ${currentLang==='ar'?'اسحب':'SLIDE'} • 32%</div><div class="trackpad-grid" id="trackpadGrid"></div><div class="track-dot" id="trackDot"></div></div>`;
       } else {
         const display=item.d||item.k;
         const cls=item.c||'';
@@ -184,27 +267,58 @@ function updateUI(){
   document.getElementById('ctrlKey')?.classList.toggle('active', isCtrl);
   document.getElementById('altKey')?.classList.toggle('active', isAlt);
   langIndicator.textContent=currentLang.toUpperCase();
-  versionText.textContent=`${currentTheme.toUpperCase()} • ${currentSound.toUpperCase()}`;
+  versionText.textContent=`${currentTheme.toUpperCase()} • TURBO`;
   document.body.className=document.body.className.replace(/theme-\S+/g,'');
   document.body.classList.add('theme-'+currentTheme);
 }
 
+let deleteInterval=null,deleteSpeed=80,deleteHoldTimer=null;
+function startFastDelete(){
+  del(); onDelete(); playSound();
+  deleteSpeed=120;
+  deleteInterval=setInterval(()=>{
+    del(); onDelete(); playSound();
+    // تسريع تدريجي
+    if(deleteSpeed>20){ deleteSpeed-=5; clearInterval(deleteInterval); deleteInterval=setInterval(()=>{del(); onDelete(); playSound();},deleteSpeed); }
+  },deleteSpeed);
+}
+function stopFastDelete(){ clearInterval(deleteInterval); deleteInterval=null; deleteSpeed=80; clearTimeout(deleteHoldTimer); }
+
 function attachEvents(){
+  keyboardEl.addEventListener('pointerdown',e=>{
+    const k=e.target.closest('.key'); if(!k) return;
+    if(k.id==='delKey' || k.dataset.key==='Backspace'){
+      e.preventDefault();
+      // مسح سريع متسارع
+      deleteHoldTimer=setTimeout(()=>{ startFastDelete(); },300);
+    }
+  });
+  keyboardEl.addEventListener('pointerup',e=>{
+    const k=e.target.closest('.key'); if(k && (k.id==='delKey'||k.dataset.key==='Backspace')){ stopFastDelete(); }
+  });
+  keyboardEl.addEventListener('pointerleave',()=>{ stopFastDelete(); });
+
   keyboardEl.onclick=(e)=>{
     const k=e.target.closest('.key'); if(!k||k.id==='spaceTrackpad') return;
     const key=k.dataset.key; if(!key) return;
-    k.classList.add('pressed','rgb-react'); setTimeout(()=>{k.classList.remove('pressed'); setTimeout(()=>k.classList.remove('rgb-react'),500);},110);
+    // RGB سلس
+    if(currentRGB!=='off'){
+      k.classList.add('rgb-react');
+      triggerRGBWave(k);
+      setTimeout(()=>k.classList.remove('rgb-react'),700);
+    }
+    k.classList.add('pressed'); setTimeout(()=>k.classList.remove('pressed'),100);
     playSound(); vibrate();
     if(key==='shift'){isShift=!isShift;updateUI();return;}
     if(key==='caps'){isCaps=!isCaps;updateUI();return;}
     if(key==='ctrl'){isCtrl=!isCtrl;updateUI();return;}
     if(key==='alt'){isAlt=!isAlt;updateUI();return;}
     if(key==='fn'){const now=Date.now(); if(now-(window.lastFnTap||0)<350){isFullTrackpad=!isFullTrackpad; const ov=document.getElementById('overlay'); if(isFullTrackpad) ov.classList.add('show'); else ov.classList.remove('show');} window.lastFnTap=now; return;}
-    if(key==='esc'){sendKeyMod(KC.ESC,isShift,isCtrl,isAlt);currentWord='';updateSuggestions();return;}
+    if(key==='esc'){sendKeyMod(KC.ESC,isShift,isCtrl,isAlt);currentWord='';sentenceBuffer='';updateSuggestions();return;}
     if(key==='tab'){sendKeyMod(KC.TAB,isShift,isCtrl,isAlt);onCharTyped('\t');return;}
     if(key==='enter'){sendKeyMod(KC.ENTER,isShift,isCtrl,isAlt);onCharTyped('\n');return;}
     if(key==='Backspace'){del();onDelete();return;}
-    if(/^F\d+$/.test(key)){const code=KC[key]; if(code) sendKeyMod(code,isShift,isCtrl,isAlt); currentWord='';updateSuggestions(); return;}
+    if(/^F\d+$/.test(key)){const code=KC[key]; if(code) sendKeyMod(code,isShift,isCtrl,isAlt); currentWord='';sentenceBuffer='';updateSuggestions(); return;}
     if(key==='arrowleft'){sendKeyMod(KC.LEFT,isShift,isCtrl,isAlt);return;}
     if(key==='arrowright'){sendKeyMod(KC.RIGHT,isShift,isCtrl,isAlt);return;}
     if(key==='arrowupdown'){sendKeyMod(KC.UP,isShift,isCtrl,isAlt);return;}
@@ -221,6 +335,7 @@ function attachEvents(){
     }
     if(isShift){isShift=false;updateUI();}
   };
+
   const spaceTrackpad=document.getElementById('spaceTrackpad');
   if(!spaceTrackpad) return;
   const trackDot=document.getElementById('trackDot'),trackGrid=document.getElementById('trackpadGrid'),overlay=document.getElementById('overlay');
@@ -255,4 +370,4 @@ document.querySelector(`[data-rgb="${currentRGB}"]`)?.classList.add('active');
 document.getElementById('autocorrectToggle').textContent=`${autocorrectEnabled?'✅':'❌'} تصحيح تلقائي: ${autocorrectEnabled?'مفعل':'مطفي'}`;
 document.getElementById('suggestToggle').textContent=`${suggestEnabled?'💡':'❌'} اقتراحات: ${suggestEnabled?'مفعلة':'مطفية'}`;
 renderKeyboard();
-console.log('Rapoo v2.1 - Bar Fixed + Autocorrect');
+console.log('Rapoo v2.2 TURBO - Fast Delete, Sentence Correct with Space, Smooth RGB 60fps');

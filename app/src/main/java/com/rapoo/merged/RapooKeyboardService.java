@@ -42,7 +42,7 @@ public class RapooKeyboardService extends InputMethodService {
                     @Override public void onRmsChanged(float rmsdB){}
                     @Override public void onBufferReceived(byte[] buffer){}
                     @Override public void onEndOfSpeech(){}
-                    @Override public void onError(int error){ isListening=false; try{ webView.post(()-> webView.evaluateJavascript("window.voiceEnded('خطأ: "+error+"')",null)); }catch(Exception e){} }
+                    @Override public void onError(int error){ isListening=false; try{ webView.post(()-> webView.evaluateJavascript("window.voiceEnded('خطأ')",null)); }catch(Exception e){} }
                     @Override public void onResults(Bundle results){
                         isListening=false;
                         try{
@@ -74,11 +74,81 @@ public class RapooKeyboardService extends InputMethodService {
         return c;
     }
     public class WebAppInterface{
+        // FIX DELETE - يمسح حرف واحد فقط
         @JavascriptInterface public void commitText(String t){ InputConnection ic=getCurrentInputConnection(); if(ic!=null) ic.commitText(t,1); }
-        @JavascriptInterface public void deleteText(){ InputConnection ic=getCurrentInputConnection(); if(ic==null) return; try{ ExtractedTextRequest r=new ExtractedTextRequest(); r.token=0; ExtractedText et=ic.getExtractedText(r,0); if(et!=null&&et.selectionStart!=et.selectionEnd){ ic.commitText("",1); } else { ic.deleteSurroundingText(1,0); } }catch(Exception e){ ic.deleteSurroundingText(1,0); } }
-        @JavascriptInterface public void deleteN(int n){ InputConnection ic=getCurrentInputConnection(); if(ic==null) return; try{ ExtractedTextRequest r=new ExtractedTextRequest(); r.token=0; ExtractedText et=ic.getExtractedText(r,0); if(et!=null&&et.selectionStart!=et.selectionEnd){ ic.commitText("",1); } else { if(n>0) ic.deleteSurroundingText(n,0); } }catch(Exception e){ ic.deleteSurroundingText(n>0?n:1,0); } }
-        @JavascriptInterface public void sendKeyWithModifiers(int c,boolean s,boolean ctrl,boolean alt){ InputConnection ic=getCurrentInputConnection(); if(ic==null) return; int m=0; if(s) m|=KeyEvent.META_SHIFT_ON; if(ctrl) m|=KeyEvent.META_CTRL_ON; if(alt) m|=KeyEvent.META_ALT_ON; ic.sendKeyEvent(new KeyEvent(0,0,KeyEvent.ACTION_DOWN,c,0,m)); ic.sendKeyEvent(new KeyEvent(0,0,KeyEvent.ACTION_UP,c,0,m)); }
-        @JavascriptInterface public void moveCursor(int dx){ try{ InputConnection ic=getCurrentInputConnection(); if(ic==null) return; if(dx>0) ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_RIGHT)); else ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_LEFT)); }catch(Exception e){ try{ InputConnection ic=getCurrentInputConnection(); if(ic!=null){ ExtractedTextRequest r=new ExtractedTextRequest(); r.token=0; ExtractedText et=ic.getExtractedText(r,0); if(et==null) return; int p=et.selectionStart+dx; if(p<0) p=0; if(p>et.text.length()) p=et.text.length(); ic.setSelection(p,p);} }catch(Exception ex){} } }
+        @JavascriptInterface public void deleteText(){ 
+            try{
+                InputConnection ic=getCurrentInputConnection(); 
+                if(ic==null) return;
+                // طريقة صحيحة - يمسح حرف واحد فقط
+                ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL));
+                ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL));
+            }catch(Exception e){
+                try{ InputConnection ic=getCurrentInputConnection(); if(ic!=null) ic.deleteSurroundingText(1,0); }catch(Exception ex){}
+            }
+        }
+        @JavascriptInterface public void deleteN(int n){ 
+            try{ 
+                InputConnection ic=getCurrentInputConnection(); 
+                if(ic==null) return;
+                if(n<=0) n=1;
+                // يمسح N حروف فقط، مش الكل
+                for(int i=0;i<n && i<50;i++){
+                    ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL));
+                    ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL));
+                }
+            }catch(Exception e){} 
+        }
+        // FIX WINDOWS KEYS - F1-F12 و Esc و Tab و Arrows
+        @JavascriptInterface public void sendKeyWithModifiers(int c,boolean s,boolean ctrl,boolean alt){ 
+            try{
+                InputConnection ic=getCurrentInputConnection(); 
+                if(ic==null) return; 
+                int m=0; 
+                if(s) m|=KeyEvent.META_SHIFT_ON; 
+                if(ctrl) m|=KeyEvent.META_CTRL_ON; 
+                if(alt) m|=KeyEvent.META_ALT_ON;
+                // F1-F12: 131-142, ESC 111, TAB 61, ENTER 66, etc
+                ic.sendKeyEvent(new KeyEvent(0,0,KeyEvent.ACTION_DOWN,c,0,m)); 
+                ic.sendKeyEvent(new KeyEvent(0,0,KeyEvent.ACTION_UP,c,0,m));
+            }catch(Exception e){}
+        }
+        @JavascriptInterface public void sendKey(int keyCode){
+            try{
+                InputConnection ic=getCurrentInputConnection();
+                if(ic==null) return;
+                ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, keyCode));
+                ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, keyCode));
+            }catch(Exception e){}
+        }
+        // FIX TRACKPAD - يحرك المؤشر حرف حرف
+        @JavascriptInterface public void moveCursor(int dx){ 
+            try{ 
+                InputConnection ic=getCurrentInputConnection(); 
+                if(ic==null) return; 
+                // طريقة مضمونة 100% - يمين وشمال
+                if(dx>0){
+                    ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_RIGHT));
+                    ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_RIGHT));
+                } else {
+                    ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_LEFT));
+                    ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_LEFT));
+                }
+            }catch(Exception e){
+                try{
+                    InputConnection ic=getCurrentInputConnection(); 
+                    if(ic!=null){
+                        ExtractedTextRequest r=new ExtractedTextRequest(); r.token=0;
+                        ExtractedText et=ic.getExtractedText(r,0);
+                        if(et==null) return;
+                        int p=et.selectionStart+dx;
+                        if(p<0) p=0; 
+                        if(p>et.text.length()) p=et.text.length();
+                        ic.setSelection(p,p);
+                    }
+                }catch(Exception ex){}
+            }
+        }
         @JavascriptInterface public void saveSetting(String k,String v){ prefs.edit().putString(k,v).apply(); }
         @JavascriptInterface public String getSetting(String k,String d){ return prefs.getString(k,d); }
         @JavascriptInterface public int getBatteryLevel(){ try{ IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED); Intent batteryStatus = registerReceiver(null, ifilter); if(batteryStatus==null) return 73; int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1); int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1); return (int)((level / (float)scale) * 100); }catch(Exception e){ return 73; } }
@@ -90,13 +160,7 @@ public class RapooKeyboardService extends InputMethodService {
                     Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
                     intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
                     intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ar-EG");
-                    intent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, getPackageName());
                     speechRecognizer.startListening(intent);
-                } else {
-                    Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-                    intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(intent);
                 }
             }catch(Exception e){ isListening=false; }
         }

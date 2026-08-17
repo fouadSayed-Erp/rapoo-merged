@@ -5,6 +5,13 @@ body.scale-small .key{height:36px;font-size:12px}
 body.scale-medium .key{height:42px;font-size:14px}
 body.scale-large .key{height:48px;font-size:16px}
 body.scale-xlarge .key{height:54px;font-size:18px}
+/* RGB Effects */
+body.rgb-reactive .key.pressed{animation:rgbFlash .3s}
+@keyframes rgbFlash{0%{background:#8b5cf6}50%{background:#ec4899}100%{background:#2d2d2d}}
+body.rgb-rainbow .key{animation:rainbow 3s infinite}
+@keyframes rainbow{0%{border-color:#ff0000}16%{border-color:#ff9900}33%{border-color:#ffff00}50%{border-color:#00ff00}66%{border-color:#0099ff}83%{border-color:#9900ff}100%{border-color:#ff0000}}
+body.rgb-wave .keyboard{animation:wave 2s infinite}
+@keyframes wave{0%,100%{filter:brightness(1)}50%{filter:brightness(1.2)}}
 .keyboard-container{background:#15181a;border-radius:16px 16px 0 0;width:100vw;max-width:100vw;min-width:100vw;position:relative;overflow:hidden;display:flex;flex-direction:column;height:100%;max-height:100%;border-top:1px solid #23272a}
 .header{display:flex;align-items:center;justify-content:space-between;padding:5px 8px;flex:0 0 34px;background:#121416;border-bottom:1px solid #1f2326;flex-shrink:0}
 .dots{display:flex;gap:4px;cursor:pointer;padding:5px 7px;border-radius:7px;background:#1f2326;border:1px solid #2a2e31}
@@ -30,8 +37,8 @@ body.scale-xlarge .key{height:54px;font-size:18px}
 .clip-item:active{background:#8b5cf6;color:#fff}
 .keyboard{display:flex;flex-direction:column;gap:3px;padding:4px;flex:1;overflow:hidden;background:#15181a;justify-content:space-evenly}
 .row{display:flex;gap:3px;width:100%;flex:1;min-height:0;max-height:44px;justify-content:center}
-.row-f{flex:0.7 1 0;max-height:32px;min-height:28px}
-.row-n{flex:0.9 1 0;max-height:40px;min-height:34px}
+.row-f{flex:0.7 1 0;max-height:30px;min-height:26px}
+.row-n{flex:0.9 1 0;max-height:38px;min-height:32px}
 .row-b{flex:1.1 1 0;min-height:44px;max-height:48px;gap:3px}
 .key{background:#2d2d2d;color:#e5e7eb;border-radius:8px;flex:1 1 0;min-width:0;height:100%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;border:none;transition:transform .05s;transform:translateZ(0)}
 .key.pressed{transform:scale(.88);background:#3a3a3a}
@@ -58,12 +65,12 @@ body.scale-xlarge .key{height:54px;font-size:18px}
 .mini-toast.show{opacity:1}
 .overlay{position:absolute;inset:0;background:rgba(10,10,14,.90);display:flex;align-items:center;justify-content:center;border-radius:16px 16px 0 0;opacity:0;pointer-events:none;z-index:10;transition:opacity .2s}
 .overlay.show{opacity:1;pointer-events:auto}
-.numpad-overlay{position:absolute;bottom:0;left:5%;right:5%;width:90%;height:auto;max-height:65%;background:#15181a;border:1px solid #2a2e31;border-bottom:none;border-radius:14px 14px 0 0;z-index:15;display:none;flex-direction:column;padding:6px;box-shadow:0 -10px 30px rgba(0,0,0,.6)}
+.numpad-overlay{position:absolute;bottom:0;left:2%;right:2%;width:96%;height:auto;max-height:58%;background:#15181a;border:1px solid #2a2e31;border-bottom:none;border-radius:12px 12px 0 0;z-index:15;display:none;flex-direction:column;padding:5px;box-shadow:0 -8px 20px rgba(0,0,0,.6)}
 .numpad-overlay.show{display:flex}
-.numpad-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;flex:1}
-.numpad-key{background:#2d2d2d;color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;border:none;min-height:36px}
+.numpad-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;flex:1}
+.numpad-key{background:#2d2d2d;color:#fff;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;border:none;min-height:34px;transition:transform .05s}
 .numpad-key.pressed{background:#8b5cf6;transform:scale(.92)}
-.numpad-header{display:flex;justify-content:space-between;align-items:center;padding:4px 0;margin-bottom:4px;color:#8b5cf6;font-weight:800;font-size:10px}
+.numpad-header{display:flex;justify-content:space-between;align-items:center;padding:3px 0;margin-bottom:3px;color:#8b5cf6;font-weight:800;font-size:9px}
 .settings-panel{position:absolute;inset:0;background:#0f0f12;z-index:20;display:none;flex-direction:column;padding:0;overflow:hidden;border-radius:16px 16px 0 0}
 .settings-panel.show{display:flex}
 .settings-header{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-bottom:1px solid #1f2326;background:#121416;flex:0 0 auto}

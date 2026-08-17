@@ -13,5 +13,6 @@
         <activity android:name=".MainActivity" android:exported="true" android:label="Rapoo Merged">
             <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
         </activity>
+        <activity android:name=".PermissionActivity" android:exported="false" android:theme="@android:style/Theme.Translucent.NoTitleBar" />
     </application>
 </manifest>

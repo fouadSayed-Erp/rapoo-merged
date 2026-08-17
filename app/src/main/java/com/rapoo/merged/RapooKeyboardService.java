@@ -17,7 +17,8 @@ public class RapooKeyboardService extends InputMethodService {
     @Override public void onCreate(){ super.onCreate(); prefs=getSharedPreferences("rapoo_settings",MODE_PRIVATE); }
     @Override
     public View onCreateInputView(){
-        int h=(int)(325*getResources().getDisplayMetrics().density);
+        // زودنا الارتفاع لـ 360dp عشان المسطرة ترجع
+        int h=(int)(360*getResources().getDisplayMetrics().density);
         LinearLayout c=new LinearLayout(this); c.setOrientation(LinearLayout.VERTICAL); c.setBackgroundColor(Color.parseColor("#15181a"));
         webView=new WebView(this); webView.setBackgroundColor(Color.TRANSPARENT);
         WebSettings s=webView.getSettings(); s.setJavaScriptEnabled(true); s.setDomStorageEnabled(true); s.setAllowFileAccess(true); s.setAllowFileAccessFromFileURLs(true); s.setAllowUniversalAccessFromFileURLs(true); s.setLoadWithOverviewMode(true); s.setUseWideViewPort(true); s.setCacheMode(WebSettings.LOAD_NO_CACHE);

@@ -1,14 +1,13 @@
-// v2.5 ULTRA FIX - Perfect Grid + Delete No Stuck + Fast Typing
+// v2.6 STABLE & FAST - Fixed space, settings, double typing
 const keyboardEl=document.getElementById('keyboard'),suggestionBar=document.getElementById('suggestionBar'),langIndicator=document.getElementById('langIndicator'),versionText=document.getElementById('versionText'),miniToast=document.getElementById('miniToast');
 let isShift=false,isCaps=false,isAlt=false,isCtrl=false,isTrackpadActive=false,isFullTrackpad=false,holdTimer=null,lastMoveX=0,startX=0,startY=0;
 let currentLang='en',currentTheme='dark',currentSound='clicky',currentRGB='reactive',vibEnabled=true,soundEnabled=true,autocorrectEnabled=true,suggestEnabled=true;
-let currentWord='',sentenceBuffer='',lastTapTime=0,lastTapKey='';
+let currentWord='',sentenceBuffer='',lastTapTime=0,lastTapKey='',processingKey=false;
 
 const dictionaries={
-  en:{words:["the","be","to","of","and","a","in","that","have","i","it","for","not","on","with","he","as","you","do","at","this","but","his","by","from","they","we","say","her","she","or","an","will","my","one","all","would","there","their","what","so","up","out","if","about","who","get","which","go","me","when","make","can","like","time","no","just","him","know","take","people","into","year","your","good","some","could","them","see","other","than","then","now","look","only","come","its","over","think","also","back","after","use","two","how","our","work","first","well","way","even","new","want","because","any","these","give","day","most","us","hello","world","keyboard","fast","typing","error","big","consistent"],sentences:{"hello":"Hello there!","how are you":"How are you doing?","teh":"the","adn":"and"}},
-  ar:{words:["السلام","عليكم","مرحبا","كيف","حالك","انا","انت","هو","هي","نحن","هذا","هذه","ذلك","في","من","الى","على","عن","مع","بعد","قبل","كتاب","قلم","بيت","مدرسة","عمل","وقت","يوم","سنة","موبايل","كيبورد","مسافة","تراك","باد","اعدادات","لغة","ثيم","صوت","الوان","شكرا","حبيبي","تمام","ظبط","الله","محمد","مصر","عربي","سريع","كبير","متناسق"],sentences:{"السلام عليكم":"السلام عليكم ورحمة الله وبركاته","صباح الخير":"صباح الخير يا حبيبي"}}
+  en:{words:["the","be","to","of","and","a","in","that","have","i","it","for","not","on","with","he","as","you","do","at","this","but","his","by","from","they","we","say","her","she","or","an","will","my","one","all","would","there","their","what","so","up","out","if","about","who","get","which","go","me","when","make","can","like","time","no","just","him","know","take","people","into","year","your","good","some","could","them","see","other","than","then","now","look","only","come","its","over","think","also","back","after","use","two","how","our","work","first","well","way","even","new","want","because","any","these","give","day","most","us","hello","world","keyboard","fast","big","stable","fouad"],sentences:{}},
+  ar:{words:["السلام","عليكم","مرحبا","كيف","حالك","انا","انت","هو","هي","نحن","هذا","هذه","ذلك","في","من","الى","على","عن","مع","بعد","قبل","كتاب","قلم","بيت","مدرسة","عمل","وقت","يوم","سنة","موبايل","كيبورد","مسافة","تراك","باد","اعدادات","لغة","ثيم","صوت","الوان","شكرا","حبيبي","تمام","ظبط","الله","محمد","مصر","عربي","فؤاد"],sentences:{}}
 };
-
 const layouts={
   en:{
     f:[{k:'esc',d:'esc',c:'small'},{k:'F1'},{k:'F2'},{k:'F3'},{k:'F4'},{k:'F5'},{k:'F6'},{k:'F7'},{k:'F8'},{k:'F9'},{k:'F10'},{k:'F11'},{k:'F12'}],
@@ -32,7 +31,7 @@ const KC={F1:131,F2:132,F3:133,F4:134,F5:135,F6:136,F7:137,F8:138,F9:139,F10:140
 
 let audioCtx=null;
 function getCtx(){ if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)(); return audioCtx; }
-function playSound(){ if(!soundEnabled||currentSound==='off') return; try{ const ctx=getCtx(),now=ctx.currentTime; const g=ctx.createGain(); g.gain.setValueAtTime(0.2,now); g.gain.exponentialRampToValueAtTime(0.01,now+0.06); const o=ctx.createOscillator(); o.type='square'; o.frequency.setValueAtTime(3000,now); o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now+0.06); }catch(e){} }
+function playSound(){ if(!soundEnabled||currentSound==='off') return; try{ const ctx=getCtx(),now=ctx.currentTime; const g=ctx.createGain(); g.gain.setValueAtTime(0.18,now); g.gain.exponentialRampToValueAtTime(0.01,now+0.05); const o=ctx.createOscillator(); o.type='square'; o.frequency.setValueAtTime(3000,now); o.connect(g); g.connect(ctx.destination); o.start(now); o.stop(now+0.05); }catch(e){} }
 function commit(t){ if(window.Android&&Android.commitText) Android.commitText(t); }
 function del(){ if(window.Android&&Android.deleteText) Android.deleteText(); }
 function delN(n){ if(window.Android&&Android.deleteN) Android.deleteN(n); }
@@ -40,14 +39,14 @@ function sendKeyMod(c,s,ctrl,alt){ if(window.Android&&Android.sendKeyWithModifie
 function moveCursor(dx){ if(window.Android&&Android.moveCursor) Android.moveCursor(dx); }
 function saveSet(k,v){ try{ localStorage.setItem('rapoo_'+k,v); if(window.Android&&Android.saveSetting) Android.saveSetting(k,v);}catch(e){} }
 function loadSet(k,d){ try{ const v=localStorage.getItem('rapoo_'+k); if(v!==null) return v; if(window.Android&&Android.getSetting){const av=Android.getSetting(k,d); if(av) return av;}}catch(e){} return d; }
-function vibrate(){ if(!vibEnabled) return; try{if(navigator.vibrate) navigator.vibrate(5)}catch(e){} }
-function showToast(msg){ miniToast.textContent=msg; miniToast.classList.add('show'); setTimeout(()=>miniToast.classList.remove('show'),1200); }
+function vibrate(){ if(!vibEnabled) return; try{if(navigator.vibrate) navigator.vibrate(4)}catch(e){} }
+function showToast(msg){ miniToast.textContent=msg; miniToast.classList.add('show'); setTimeout(()=>miniToast.classList.remove('show'),1100); }
 function levenshtein(a,b){ const m=[]; for(let i=0;i<=b.length;i++){m[i]=[i]} for(let j=0;j<=a.length;j++){m[0][j]=j} for(let i=1;i<=b.length;i++){for(let j=1;j<=a.length;j++){if(b.charAt(i-1)==a.charAt(j-1)) m[i][j]=m[i-1][j-1]; else m[i][j]=Math.min(m[i-1][j-1]+1,Math.min(m[i][j-1]+1,m[i-1][j]+1))}} return m[b.length][a.length]; }
 function getSuggestions(word){ if(!suggestEnabled||!word||word.length<2) return []; const dict=(dictionaries[currentLang]||dictionaries.en).words||[]; const lower=word.toLowerCase(); let res=[]; dict.forEach(w=>{ if(w.toLowerCase().startsWith(lower)&&w.toLowerCase()!==lower) res.push({w,sc:0}); }); if(res.length<4){ dict.forEach(w=>{ const d=levenshtein(lower,w.toLowerCase()); if(d<=2&&d>0) res.push({w,sc:d}); }); } res.sort((a,b)=>a.sc-b.sc); const u=[]; const seen=new Set(); for(let r of res){ if(!seen.has(r.w.toLowerCase())){seen.add(r.w.toLowerCase()); u.push(r.w);} if(u.length>=4) break; } return u; }
-function updateSuggestions(){ if(!suggestEnabled||!currentWord){ suggestionBar.innerHTML='<div class="suggestion" style="opacity:.4">ابدأ الكتابة...</div>'; return; } const sugs=getSuggestions(currentWord); let h=`<div class="suggestion active">${currentWord}</div>`; sugs.forEach(w=>{ h+=`<div class="suggestion ${w.toLowerCase()!==currentWord.toLowerCase()?'correction':''}" data-s="${w}">${w}</div>`; }); suggestionBar.innerHTML=h; suggestionBar.querySelectorAll('[data-s]').forEach(el=>{ el.addEventListener('click',()=>{ const sug=el.dataset.s; const len=currentWord.length; if(len>0) delN(len); setTimeout(()=>{ commit(sug+' '); currentWord=''; sentenceBuffer=''; updateSuggestions(); playSound(); showToast('✓ '+sug); },30); }); }); }
+function updateSuggestions(){ if(!suggestEnabled||!currentWord){ suggestionBar.innerHTML='<div class="suggestion" style="opacity:.4">ابدأ الكتابة...</div>'; return; } const sugs=getSuggestions(currentWord); let h=`<div class="suggestion active">${currentWord}</div>`; sugs.forEach(w=>{ h+=`<div class="suggestion ${w.toLowerCase()!==currentWord.toLowerCase()?'correction':''}" data-s="${w}">${w}</div>`; }); suggestionBar.innerHTML=h; suggestionBar.querySelectorAll('[data-s]').forEach(el=>{ el.addEventListener('click',()=>{ const sug=el.dataset.s; const len=currentWord.length; if(len>0) delN(len); setTimeout(()=>{ commit(sug+' '); currentWord=''; sentenceBuffer=''; updateSuggestions(); playSound(); },25); }); }); }
 function onCharTyped(ch){ if(/[a-zA-Z\u0600-\u06FF0-9]/.test(ch)){ currentWord+=ch; sentenceBuffer+=ch; } else { currentWord=''; sentenceBuffer+=' '; if(sentenceBuffer.length>80) sentenceBuffer=sentenceBuffer.slice(-50); } updateSuggestions(); }
 function onDelete(){ if(currentWord.length>0) currentWord=currentWord.slice(0,-1); if(sentenceBuffer.length>0) sentenceBuffer=sentenceBuffer.slice(0,-1); updateSuggestions(); }
-function triggerRGBWave(el){ if(currentRGB==='off') return; const all=[...document.querySelectorAll('.key:not(.space-trackpad)')]; const idx=all.indexOf(el); if(idx===-1) return; all.forEach((k,i)=>{ const d=Math.abs(i-idx); if(d<=3){ setTimeout(()=>{ k.classList.add('rgb-wave'); setTimeout(()=>k.classList.remove('rgb-wave'),320); },d*30); } }); }
+
 function renderKeyboard(){
   const layout=layouts[currentLang]||layouts.en;
   let html='';
@@ -57,7 +56,7 @@ function renderKeyboard(){
     html+=`<div class="row ${r.cls} ${r.k==='b'?'bottom-row':''}">`;
     row.forEach(item=>{
       if(item.special){ html+=`<div class="key ${item.c||''}" id="${item.id||''}" data-key="${item.k}"><div class="space-content"><span>${item.d}</span><div class="track-icon">▣</div></div><div class="space-hint">HOLD • SLIDE • 32%</div><div class="trackpad-grid" id="trackpadGrid"></div><div class="track-dot" id="trackDot"></div></div>`; }
-      else{ const disp=item.d||item.k; const cls=item.c||''; const id=item.id?` id="${item.id}"`:''; const sh=item.s?` data-shift="${item.s}"`:''; html+=`<div class="key ${cls}"${id} data-key="${item.k}"${sh}>${disp}</div>`; }
+      else{ const disp=item.d||item.k; const cls=item.c||''; const id=item.id?` id="${item.id}"`:''; html+=`<div class="key ${cls}"${id} data-key="${item.k}">${disp}</div>`; }
     });
     html+=`</div>`;
   });
@@ -72,69 +71,54 @@ function updateUI(){
   document.getElementById('ctrlKey')?.classList.toggle('active', isCtrl);
   document.getElementById('altKey')?.classList.toggle('active', isAlt);
   langIndicator.textContent=currentLang.toUpperCase();
-  versionText.textContent=`v2.5 PERFECT`;
+  versionText.textContent=`v2.6 STABLE`;
   document.body.className=document.body.className.replace(/theme-\S+/g,'');
   document.body.classList.add('theme-'+currentTheme);
 }
 
-// حذف سريع بدون تعليق - ULTRA FIX
+// حذف بدون تعليق + منع كتابة مزدوجة
 let deleteInterval=null,deleteSpeed=100,deleteHoldTimer=null,deleteActive=false;
-function startFastDelete(){
-  if(deleteActive) return;
-  deleteActive=true;
-  del(); onDelete(); playSound();
-  deleteSpeed=110;
-  deleteInterval=setInterval(()=>{
-    del(); onDelete(); playSound();
-    if(deleteSpeed>18){ deleteSpeed=Math.max(18,deleteSpeed-6); clearInterval(deleteInterval); deleteInterval=setInterval(()=>{ del(); onDelete(); },deleteSpeed); }
-  },deleteSpeed);
-}
-function stopFastDelete(){
-  deleteActive=false;
-  clearInterval(deleteInterval); deleteInterval=null;
-  clearTimeout(deleteHoldTimer); deleteHoldTimer=null;
-  deleteSpeed=100;
-  document.querySelectorAll('.key.del').forEach(k=>k.classList.remove('stuck'));
-}
+function startFastDelete(){ if(deleteActive) return; deleteActive=true; del(); onDelete(); playSound(); deleteSpeed=100; deleteInterval=setInterval(()=>{ del(); onDelete(); if(deleteSpeed>18){ deleteSpeed-=5; clearInterval(deleteInterval); deleteInterval=setInterval(()=>{ del(); onDelete(); },deleteSpeed); } },deleteSpeed); }
+function stopFastDelete(){ deleteActive=false; clearInterval(deleteInterval); deleteInterval=null; clearTimeout(deleteHoldTimer); deleteHoldTimer=null; deleteSpeed=100; }
 
 function attachEvents(){
-  // تأكد كل الـ intervals تتوقف لو خرجت من الكيبورد
-  window.addEventListener('pointerup',stopFastDelete);
-  window.addEventListener('touchend',stopFastDelete);
-  window.addEventListener('pointercancel',stopFastDelete);
-  document.addEventListener('visibilitychange',stopFastDelete);
+  window.addEventListener('pointerup',stopFastDelete,{passive:true});
+  window.addEventListener('touchend',stopFastDelete,{passive:true});
+  window.addEventListener('pointercancel',stopFastDelete,{passive:true});
 
   const keys=keyboardEl.querySelectorAll('.key');
   keys.forEach(k=>{
     let startX=0,startY=0,startTime=0,moved=false,isDel=k.id==='delKey'||k.dataset.key==='Backspace';
-    
-    k.addEventListener('pointerdown',e=>{
-      e.preventDefault();
-      startX=e.clientX; startY=e.clientY; startTime=Date.now(); moved=false;
+    let handled=false;
+
+    const handlePointerDown=(e)=>{
+      if(processingKey) return;
+      startX=e.clientX; startY=e.clientY; startTime=Date.now(); moved=false; handled=false;
       k.classList.add('pressed');
-      if(currentRGB!=='off'){ k.classList.add('rgb-react'); triggerRGBWave(k); }
-      if(isDel){
-        // حذف سريع
-        deleteHoldTimer=setTimeout(()=>{ k.classList.add('stuck'); startFastDelete(); },300);
-      }
-    },{passive:false});
+      if(currentRGB!=='off') k.classList.add('rgb-react');
+      if(isDel){ deleteHoldTimer=setTimeout(()=>{ startFastDelete(); },320); }
+    };
 
-    k.addEventListener('pointermove',e=>{
-      if(Math.abs(e.clientX-startX)>10||Math.abs(e.clientY-startY)>10){
-        moved=true; k.classList.remove('pressed'); if(isDel) stopFastDelete();
-      }
-    },{passive:false});
+    const handlePointerMove=(e)=>{
+      if(Math.abs(e.clientX-startX)>10||Math.abs(e.clientY-startY)>10){ moved=true; k.classList.remove('pressed'); if(isDel) stopFastDelete(); }
+    };
 
-    const endHandler=(e)=>{
-      e.preventDefault();
+    const handlePointerUp=(e)=>{
+      if(handled) return;
+      handled=true;
       k.classList.remove('pressed');
       if(isDel) stopFastDelete();
-      setTimeout(()=>{ if(currentRGB!=='off') k.classList.remove('rgb-react'); },320);
+      setTimeout(()=>{ if(currentRGB!=='off') k.classList.remove('rgb-react'); },280);
       if(moved) return;
       if(Date.now()-startTime>500 && !isDel) return;
+      // منع الكتابة المزدوجة
       const now=Date.now();
-      if(k.dataset.key===lastTapKey && now-lastTapTime<35) return;
+      if(k.dataset.key===lastTapKey && now-lastTapTime<80) return;
       lastTapTime=now; lastTapKey=k.dataset.key;
+
+      if(processingKey) return;
+      processingKey=true;
+      setTimeout(()=>{ processingKey=false; },30);
 
       const key=k.dataset.key; if(!key) return;
       playSound(); vibrate();
@@ -152,12 +136,15 @@ function attachEvents(){
       if(key==='arrowright'){sendKeyMod(KC.RIGHT,isShift,isCtrl,isAlt);return;}
       if(key==='arrowupdown'){sendKeyMod(KC.UP,isShift,isCtrl,isAlt);return;}
       let out=key;
-      if(out.length===1){ if(currentLang==='en'&&/[a-z]/.test(out)) out=(isShift||isCaps)?out.toUpperCase():out.toLowerCase(); if(isShift&&k.dataset.shift) out=k.dataset.shift; }
+      if(out.length===1){ if(currentLang==='en'&&/[a-z]/.test(out)) out=(isShift||isCaps)?out.toUpperCase():out.toLowerCase(); }
       if(out==='space'){commit(' '); onCharTyped(' ');} else { if(isCtrl||isAlt){const code=KC[out.toUpperCase()]||0; if(code) sendKeyMod(code,isShift,isCtrl,isAlt); else commit(out);} else commit(out); onCharTyped(out); }
       if(isShift){isShift=false;updateUI();}
     };
-    k.addEventListener('pointerup',endHandler,{passive:false});
-    k.addEventListener('touchend',endHandler,{passive:false});
+
+    k.addEventListener('pointerdown',handlePointerDown,{passive:true});
+    k.addEventListener('pointermove',handlePointerMove,{passive:true});
+    k.addEventListener('pointerup',handlePointerUp,{passive:true});
+    k.addEventListener('pointercancel',()=>{ k.classList.remove('pressed'); stopFastDelete(); if(currentRGB!=='off') k.classList.remove('rgb-react'); },{passive:true});
   });
 
   const spaceTrackpad=document.getElementById('spaceTrackpad');
@@ -166,12 +153,12 @@ function attachEvents(){
   if(trackGrid){trackGrid.innerHTML=''; for(let i=0;i<48;i++){const d=document.createElement('div'); trackGrid.appendChild(d);}}
   function activate(){ if(isTrackpadActive) return; isTrackpadActive=true; spaceTrackpad.classList.add('track-active'); overlay.classList.add('show'); vibrate(); playSound(); }
   function deactivate(){ if(!isTrackpadActive) return; isTrackpadActive=false; spaceTrackpad.classList.remove('track-active'); if(!isFullTrackpad) overlay.classList.remove('show'); if(trackDot) trackDot.style.left='50%'; }
-  function onStart(x,y){ startX=lastMoveX=x; startY=y; clearTimeout(holdTimer); holdTimer=setTimeout(()=>activate(),380); }
+  function onStart(x,y){ startX=lastMoveX=x; startY=y; clearTimeout(holdTimer); holdTimer=setTimeout(()=>activate(),360); }
   function onMove(x){ if(!isTrackpadActive){ if(Math.abs(x-startX)>10) clearTimeout(holdTimer); return; } const dx=x-lastMoveX; if(Math.abs(dx)>7){ if(dx>0) moveCursor(1); else moveCursor(-1); lastMoveX=x; const rect=spaceTrackpad.getBoundingClientRect(); let pct=((x-rect.left)/rect.width)*100; pct=Math.max(5,Math.min(95,pct)); if(trackDot) trackDot.style.left=pct+'%'; } }
   function onEnd(x,y){ clearTimeout(holdTimer); if(isTrackpadActive){ deactivate(); } else { if(Math.abs(x-startX)<10&&Math.abs(y-startY)<10){ commit(' '); onCharTyped(' '); playSound(); } } }
-  spaceTrackpad.addEventListener('touchstart',e=>{ e.preventDefault(); const t=e.touches[0]; onStart(t.clientX,t.clientY); },{passive:false});
-  spaceTrackpad.addEventListener('touchmove',e=>{ e.preventDefault(); onMove(e.touches[0].clientX); },{passive:false});
-  spaceTrackpad.addEventListener('touchend',e=>{ e.preventDefault(); const t=e.changedTouches[0]; onEnd(t.clientX,t.clientY); },{passive:false});
+  spaceTrackpad.addEventListener('pointerdown',e=>{ onStart(e.clientX,e.clientY); },{passive:true});
+  spaceTrackpad.addEventListener('pointermove',e=>{ onMove(e.clientX); },{passive:true});
+  spaceTrackpad.addEventListener('pointerup',e=>{ onEnd(e.clientX,e.clientY); },{passive:true});
   overlay.addEventListener('click',()=>{ if(isTrackpadActive) deactivate(); if(isFullTrackpad){ isFullTrackpad=false; overlay.classList.remove('show'); } });
 }
 
@@ -179,9 +166,17 @@ document.getElementById('settingsBtn')?.addEventListener('click',()=>document.ge
 document.getElementById('closeSettings')?.addEventListener('click',()=>document.getElementById('settingsPanel').classList.remove('show'));
 document.querySelectorAll('#langOptions .option-btn').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('#langOptions .option-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); currentLang=b.dataset.lang; saveSet('language',currentLang); renderKeyboard(); showToast('🌐 '+currentLang);}));
 document.querySelectorAll('#themeOptions .option-btn').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('#themeOptions .option-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); currentTheme=b.dataset.theme; saveSet('theme',currentTheme); updateUI(); showToast('🎨 '+currentTheme);}));
+document.querySelectorAll('#soundOptions .option-btn').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('#soundOptions .option-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); currentSound=b.dataset.sound; soundEnabled=currentSound!=='off'; saveSet('sound',currentSound); saveSet('sound_enabled',soundEnabled?'true':'false'); if(soundEnabled) playSound(); showToast('🔊 '+currentSound);}));
+document.querySelectorAll('#rgbOptions .option-btn').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('#rgbOptions .option-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); currentRGB=b.dataset.rgb; saveSet('rgb',currentRGB); updateUI(); showToast('🌈 '+currentRGB);}));
+document.getElementById('autocorrectToggle')?.addEventListener('click',function(){autocorrectEnabled=!autocorrectEnabled; this.textContent=`${autocorrectEnabled?'✅':'❌'} تصحيح تلقائي: ${autocorrectEnabled?'مفعل':'مطفي'}`; saveSet('autocorrect',autocorrectEnabled?'true':'false'); showToast('تصحيح '+(autocorrectEnabled?'مفعل':'مطفي'));});
+document.getElementById('suggestToggle')?.addEventListener('click',function(){suggestEnabled=!suggestEnabled; this.textContent=`${suggestEnabled?'💡':'❌'} اقتراحات: ${suggestEnabled?'مفعلة':'مطفية'}`; saveSet('suggest',suggestEnabled?'true':'false'); updateSuggestions(); showToast('اقتراحات '+(suggestEnabled?'مفعلة':'مطفية'));});
+document.getElementById('vibToggle')?.addEventListener('click',function(){vibEnabled=!vibEnabled; this.textContent=`📳 اهتزاز: ${vibEnabled?'مفعل':'مطفي'}`; saveSet('vib',vibEnabled?'true':'false'); if(vibEnabled) vibrate();});
+document.getElementById('resetBtn')?.addEventListener('click',()=>{localStorage.clear(); location.reload();});
 
 currentLang=loadSet('language','en'); currentTheme=loadSet('theme','dark'); currentSound=loadSet('sound','clicky'); currentRGB=loadSet('rgb','reactive'); soundEnabled=loadSet('sound_enabled','true')==='true'; vibEnabled=loadSet('vib','true')==='true';
 document.querySelector(`[data-lang="${currentLang}"]`)?.classList.add('active');
 document.querySelector(`[data-theme="${currentTheme}"]`)?.classList.add('active');
+document.querySelector(`[data-sound="${currentSound}"]`)?.classList.add('active');
+document.querySelector(`[data-rgb="${currentRGB}"]`)?.classList.add('active');
 renderKeyboard();
-console.log('Rapoo v2.5 PERFECT FIT - No overlap, delete fixed, fast typing');
+console.log('Rapoo v2.6 STABLE - Space fixed, settings grid, no double typing, smooth');

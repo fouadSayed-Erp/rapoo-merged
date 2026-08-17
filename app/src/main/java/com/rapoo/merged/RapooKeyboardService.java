@@ -5,8 +5,6 @@ import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.view.inputmethod.InputConnection;
-import android.view.inputmethod.ExtractedText;
-import android.view.inputmethod.ExtractedTextRequest;
 import android.widget.LinearLayout;
 import android.graphics.Color;
 import android.view.KeyEvent;
@@ -81,15 +79,13 @@ public class RapooKeyboardService extends InputMethodService {
                 if(ic==null) return;
                 ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL));
                 ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL));
-            }catch(Exception e){
-                try{ InputConnection ic=getCurrentInputConnection(); if(ic!=null) ic.deleteSurroundingText(1,0); }catch(Exception ex){}
-            }
+            }catch(Exception e){}
         }
         @JavascriptInterface public void deleteN(int n){ 
             try{ 
                 InputConnection ic=getCurrentInputConnection(); 
                 if(ic==null) return;
-                if(n<=0) n=1; if(n>20) n=20;
+                if(n<=0) n=1; if(n>15) n=15;
                 for(int i=0;i<n;i++){
                     ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL));
                     ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DEL));
@@ -119,7 +115,8 @@ public class RapooKeyboardService extends InputMethodService {
         @JavascriptInterface public void moveCursor(int dx){ 
             try{ 
                 InputConnection ic=getCurrentInputConnection(); 
-                if(ic==null) return; 
+                if(ic==null) return;
+                // مضمون 100% - DPAD
                 if(dx>0){
                     ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_RIGHT));
                     ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_RIGHT));
@@ -133,17 +130,7 @@ public class RapooKeyboardService extends InputMethodService {
         @JavascriptInterface public String getSetting(String k,String d){ return prefs.getString(k,d); }
         @JavascriptInterface public int getBatteryLevel(){ try{ IntentFilter ifilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED); Intent batteryStatus = registerReceiver(null, ifilter); if(batteryStatus==null) return 54; int level = batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1); int scale = batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1); return (int)((level / (float)scale) * 100); }catch(Exception e){ return 54; } }
         @JavascriptInterface public String getTime(){ try{ SimpleDateFormat sdf = new SimpleDateFormat("h:mm", new Locale("en")); return sdf.format(new Date()); }catch(Exception e){ return "2:39"; } }
-        @JavascriptInterface public void startVoiceInput(){
-            try{
-                if(speechRecognizer!=null && !isListening){
-                    isListening=true;
-                    Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
-                    intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-                    intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ar-EG");
-                    speechRecognizer.startListening(intent);
-                }
-            }catch(Exception e){ isListening=false; }
-        }
+        @JavascriptInterface public void startVoiceInput(){ try{ if(speechRecognizer!=null && !isListening){ isListening=true; Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH); intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM); intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ar-EG"); speechRecognizer.startListening(intent); } }catch(Exception e){ isListening=false; } }
         @JavascriptInterface public void stopVoiceInput(){ try{ if(speechRecognizer!=null && isListening){ speechRecognizer.stopListening(); isListening=false; } }catch(Exception e){ isListening=false; } }
         @JavascriptInterface public String getClipboardText(){ try{ ClipboardManager cm = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE); if(cm!=null && cm.hasPrimaryClip()){ ClipData.Item item = cm.getPrimaryClip().getItemAt(0); if(item!=null && item.getText()!=null) return item.getText().toString(); } }catch(Exception e){} return ""; }
         @JavascriptInterface public void copyToClipboard(String text){ try{ ClipboardManager cm = (ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE); if(cm!=null){ ClipData clip = ClipData.newPlainText("rapoo", text); cm.setPrimaryClip(clip); } }catch(Exception e){} }

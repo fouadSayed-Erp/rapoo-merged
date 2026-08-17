@@ -92,6 +92,14 @@ public class RapooKeyboardService extends InputMethodService {
                 }
             }catch(Exception e){} 
         }
+        @JavascriptInterface public void sendKey(int keyCode){
+            try{
+                InputConnection ic=getCurrentInputConnection();
+                if(ic==null) return;
+                ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, keyCode));
+                ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, keyCode));
+            }catch(Exception e){}
+        }
         @JavascriptInterface public void sendKeyWithModifiers(int c,boolean s,boolean ctrl,boolean alt){ 
             try{
                 InputConnection ic=getCurrentInputConnection(); 
@@ -104,19 +112,10 @@ public class RapooKeyboardService extends InputMethodService {
                 ic.sendKeyEvent(new KeyEvent(0,0,KeyEvent.ACTION_UP,c,0,m));
             }catch(Exception e){}
         }
-        @JavascriptInterface public void sendKey(int keyCode){
-            try{
-                InputConnection ic=getCurrentInputConnection();
-                if(ic==null) return;
-                ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, keyCode));
-                ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, keyCode));
-            }catch(Exception e){}
-        }
         @JavascriptInterface public void moveCursor(int dx){ 
             try{ 
                 InputConnection ic=getCurrentInputConnection(); 
                 if(ic==null) return;
-                // مضمون 100% - DPAD
                 if(dx>0){
                     ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DPAD_RIGHT));
                     ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_DPAD_RIGHT));

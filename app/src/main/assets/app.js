@@ -1,6 +1,6 @@
 const keyboardEl=document.getElementById('keyboard'),suggestionBar=document.getElementById('suggestionBar'),langIndicator=document.getElementById('langIndicator'),versionText=document.getElementById('versionText'),miniToast=document.getElementById('miniToast'),numpadOverlay=document.getElementById('numpadOverlay'),numpadGrid=document.getElementById('numpadGrid'),batteryDisplay=document.getElementById('batteryDisplay'),timeDisplay=document.getElementById('timeDisplay'),keyboardContainer=document.getElementById('keyboardContainer'),clipboardBar=document.getElementById('clipboardBar');
 let isShift=false,isCaps=false,isCtrl=false,isAlt=false,isTrackpadActive=false,holdTimer=null,lastMoveX=0;
-let currentLang='ar',currentTheme='dark',currentSound='clicky',currentRGB='reactive',currentScale='medium',vibEnabled=true,soundEnabled=true,autocorrectEnabled=true,suggestEnabled=true,numpadEnabled=true,micEnabled=true,isFloating=false,isMicListening=false;
+let currentLang='ar',currentTheme='dark',currentSound='clicky',currentRGB='reactive',currentScale='medium',vibEnabled=true,soundEnabled=true,autocorrectEnabled=true,suggestEnabled=true,numpadEnabled=true,micEnabled=true,isFloating=false,isMicListening=false,showInstructions=false;
 let currentWord='',processingKey=false,spacePressed=false;
 let clipboardItems=["مرحبا","كيف حالك","فؤاد","شكرا","تمام"];
 const arabicFullDict=["ذ","ض","ص","ث","ق","ف","غ","ع","ه","خ","ح","ج","د","ش","س","ي","ب","ل","ا","ت","ن","م","ك","ط","ئ","ء","ؤ","ر","لا","ى","ة","و","ز","ظ","السلام","عليكم","مرحبا","كيف","حالك","انا","انت","هذا","هذه","ذلك","في","من","الى","على","عن","مع","كتاب","قلم","بيت","مدرسة","عمل","وقت","يوم","سنة","موبايل","كيبورد","مسافة","تراك","باد","شكرا","حبيبي","تمام","الله","محمد","مصر","فؤاد","صباح","الخير","مساء","حلو","سريع","تتم","تم"];
@@ -29,7 +29,7 @@ function moveCursor(dx){ try{ if(window.Android&&Android.moveCursor) Android.mov
 function saveSet(k,v){ try{ localStorage.setItem("rapoo_"+k,v); if(window.Android&&Android.saveSetting) Android.saveSetting(k,v);}catch(e){} }
 function loadSet(k,d){ try{ const v=localStorage.getItem("rapoo_"+k); if(v!==null) return v; if(window.Android&&Android.getSetting){const av=Android.getSetting(k,d); if(av) return av;}}catch(e){} return d; }
 function vibrate(){ if(!vibEnabled) return; try{if(navigator.vibrate) navigator.vibrate(5)}catch(e){} }
-function showToast(msg){ miniToast.textContent=msg; miniToast.classList.add("show"); setTimeout(()=>miniToast.classList.remove("show"),1400); }
+function showToast(msg){ if(!showInstructions) return; miniToast.textContent=msg; miniToast.classList.add("show"); setTimeout(()=>miniToast.classList.remove("show"),1400); }
 function levenshtein(a,b){ if(a.length===0) return b.length; if(b.length===0) return a.length; const m=[]; for(let i=0;i<=b.length;i++){m[i]=[i]} for(let j=0;j<=a.length;j++){m[0][j]=j} for(let i=1;i<=b.length;i++){for(let j=1;j<=a.length;j++){if(b.charAt(i-1)==a.charAt(j-1)) m[i][j]=m[i-1][j-1]; else m[i][j]=Math.min(m[i-1][j-1]+1,Math.min(m[i][j-1]+1,m[i-1][j]+1))}} return m[b.length][a.length]; }
 function getSmartSuggestions(word){
   if(!suggestEnabled||!word||word.length<1) return {words:[],autoFix:null};
@@ -45,8 +45,9 @@ function getSmartSuggestions(word){
 }
 function updateSuggestions(){
   try{
-    if(!suggestEnabled){ suggestionBar.innerHTML='<div class="suggestion" style="opacity:.3">مطفية</div>'; return; }
-    if(!currentWord){ suggestionBar.innerHTML='<div class="suggestion" style="opacity:.6">✓ مسح لا يعلق + تراك باد سلس</div>'; return; }
+    if(!suggestEnabled||!showInstructions){ suggestionBar.innerHTML=''; suggestionBar.style.display='none'; return; }
+    suggestionBar.style.display='flex';
+    if(!currentWord){ suggestionBar.innerHTML=''; return; }
     const sugs=getSmartSuggestions(currentWord);
     let html='';
     if(sugs.autoFix){ html+='<div class="suggestion auto-fix" data-s="'+sugs.autoFix+'">✓ '+sugs.autoFix+' ⏎</div>'; } else { html+='<div class="suggestion active">'+currentWord+'</div>'; }
@@ -64,7 +65,7 @@ function handleSpace(){
   if(dict.corrections && dict.corrections[lower]){
     const correction=dict.corrections[lower];
     delN(currentWord.length);
-    setTimeout(()=>{ commit(correction+" "); showToast("✓ "+currentWord+" → "+correction); currentWord=""; playSound(); },20);
+    setTimeout(()=>{ commit(correction+" "); if(showInstructions) showToast("✓ "+currentWord+" → "+correction); currentWord=""; playSound(); },20);
     return true;
   }
   return false;
@@ -95,7 +96,7 @@ function updateClipboardBar(){
     const div=document.createElement("div");
     div.className="clip-item";
     div.textContent=item.length>16?item.substring(0,16)+"...":item;
-    div.addEventListener("click",()=>{ commit(item+" "); showToast("📋 "+item+" ✓"); clipboardBar.classList.remove("show"); playSound(); });
+    div.addEventListener("click",()=>{ commit(item+" "); if(showInstructions) showToast("📋 "+item+" ✓"); clipboardBar.classList.remove("show"); playSound(); });
     clipboardBar.appendChild(div);
   });
 }
@@ -103,7 +104,7 @@ updateClipboardBar();
 window.voiceResult=function(text){
   isMicListening=false;
   document.querySelectorAll(".key.mic, #micBtn").forEach(k=>k.classList.remove("listening","active"));
-  if(text && text.length>0){ commit(text+" "); showToast("🎤 "+text+" ✓"); playSound(); }
+  if(text && text.length>0){ commit(text+" "); if(showInstructions) showToast("🎤 "+text+" ✓"); playSound(); }
 };
 window.voiceEnded=function(){
   isMicListening=false;
@@ -150,16 +151,23 @@ function updateUI(){
     document.getElementById("ctrlKey")?.classList.toggle("active", isCtrl);
     document.getElementById("altKey")?.classList.toggle("active", isAlt);
     langIndicator.textContent=currentLang.toUpperCase().slice(0,3);
-    versionText.textContent="v4.2";
+    versionText.textContent="v4.3";
     document.body.className=document.body.className.replace(/theme-\S+/g,"").replace(/scale-\S+/g,"").replace(/rgb-\S+/g,"");
     document.body.classList.add("theme-"+currentTheme);
     document.body.classList.add("scale-"+currentScale);
     if(currentRGB!=="off") document.body.classList.add("rgb-"+currentRGB);
     if(isFloating) keyboardContainer.classList.add("floating"); else keyboardContainer.classList.remove("floating");
+    if(!showInstructions){
+      suggestionBar.style.display='none';
+      document.getElementById("messagesDisplay").style.display='none';
+    } else {
+      suggestionBar.style.display='flex';
+      document.getElementById("messagesDisplay").style.display='inline';
+    }
   }catch(e){}
 }
 
-// FIX DELETE + TRACKPAD - جذري
+// مسح سريع + تراك باد ليكويد جلاس
 let deleteInterval=null,deleteHoldTimer=null,deleteActive=false,deletePointerId=null,deleteStartTime=0,deleteMoved=false;
 function stopDeleteCompletely(){
   deleteActive=false;
@@ -172,24 +180,15 @@ function stopDeleteCompletely(){
 function startFastDeleteLoop(){
   if(deleteActive) return;
   deleteActive=true;
+  // سريع - 65ms
   deleteInterval=setInterval(()=>{
     del(); onDelete(); playSound();
-  },110);
+  },65);
 }
 
 function attachEvents(){
-  // إيقاف شامل عند أي رفع
-  const globalStop=()=>{
-    stopDeleteCompletely();
-    if(isTrackpadActive){
-      // لا نوقف التراك باد هنا - التراك باد له منطق خاص
-    }
-  };
-  window.addEventListener("pointerup", globalStop, {passive:true, capture:true});
-  window.addEventListener("pointercancel", globalStop, {passive:true, capture:true});
-  window.addEventListener("touchend", globalStop, {passive:true, capture:true});
-  window.addEventListener("touchcancel", globalStop, {passive:true, capture:true});
-  document.addEventListener("pointerup", globalStop, {passive:true, capture:true});
+  window.addEventListener("pointerup",()=>{ stopDeleteCompletely(); }, {passive:true, capture:true});
+  window.addEventListener("pointercancel",()=>{ stopDeleteCompletely(); isTrackpadActive=false; document.getElementById("spaceTrackpad")?.classList.remove("track-active"); document.getElementById("overlay")?.classList.remove("show"); }, {passive:true, capture:true});
 
   const keys=keyboardEl.querySelectorAll(".key");
   keys.forEach(k=>{
@@ -200,7 +199,6 @@ function attachEvents(){
     const isFn=k.id==="fnKey";
     const kc=parseInt(k.dataset.kc)||0;
 
-    // DELETE - إصلاح جذري
     if(isDel){
       k.addEventListener("pointerdown", (e)=>{
         e.preventDefault();
@@ -209,17 +207,17 @@ function attachEvents(){
         deleteStartTime=Date.now();
         deleteMoved=false;
         k.classList.add("pressed");
+        // مسح سريع بعد 300ms فقط
         deleteHoldTimer=setTimeout(()=>{
           if(!deleteMoved){
             startFastDeleteLoop();
-            showToast("⌫ مسح مستمر");
           }
-        },550);
+        },300);
       }, {passive:false});
 
       k.addEventListener("pointermove", (e)=>{
         if(e.pointerId!==deletePointerId) return;
-        if(Math.abs(e.clientX-(e.target.getBoundingClientRect().left))>15) deleteMoved=true;
+        if(Math.abs(e.clientX-(k.getBoundingClientRect().left+e.target.clientWidth/2))>12) deleteMoved=true;
         if(deleteMoved) stopDeleteCompletely();
       }, {passive:true});
 
@@ -231,12 +229,9 @@ function attachEvents(){
         try{ k.releasePointerCapture(e.pointerId); }catch(ex){}
         
         if(deleteActive){
-          // كان في مسح مستمر - وقف
           stopDeleteCompletely();
-          showToast("⌫ توقف");
         } else {
-          // ضغطة واحدة - امسح حرف واحد فقط
-          if(!deleteMoved && duration<600){
+          if(!deleteMoved && duration<500){
             del(); onDelete(); playSound(); vibrate();
           }
           stopDeleteCompletely();
@@ -247,16 +242,13 @@ function attachEvents(){
         k.classList.remove("pressed");
         stopDeleteCompletely();
       }, {passive:true});
-
-      // منع touch events من التداخل
       k.addEventListener("touchstart", (e)=>{ e.preventDefault(); }, {passive:false});
       return;
     }
 
-    // TRACKPAD - إصلاح سلس يمين وشمال
     if(isSpace){
       let spacePointerId=null;
-      let spaceStartX=0, spaceStartY=0, spaceLastX=0;
+      let spaceStartX=0, spaceLastX=0;
       let spaceHoldTimer=null;
       let spaceActive=false;
       let spaceMoved=false;
@@ -266,7 +258,6 @@ function attachEvents(){
         k.setPointerCapture(e.pointerId);
         spacePointerId=e.pointerId;
         spaceStartX=e.clientX;
-        spaceStartY=e.clientY;
         spaceLastX=e.clientX;
         spaceMoved=false;
         spaceActive=false;
@@ -278,25 +269,17 @@ function attachEvents(){
             k.classList.add("track-active");
             document.getElementById("overlay").classList.add("show");
             vibrate(); playSound();
-            showToast("👆 تراك باد - اسحب يمين وشمال");
           }
-        },380);
+        },350);
       }, {passive:false});
 
       k.addEventListener("pointermove", (e)=>{
         if(e.pointerId!==spacePointerId) return;
         const dx=e.clientX-spaceStartX;
-        const dy=e.clientY-spaceStartY;
-        
         if(!spaceActive){
-          if(Math.abs(dx)>12 || Math.abs(dy)>12){
-            spaceMoved=true;
-            clearTimeout(spaceHoldTimer);
-          }
+          if(Math.abs(dx)>12) { spaceMoved=true; clearTimeout(spaceHoldTimer); }
           return;
         }
-        
-        // تراك باد شغال - يتحرك يمين وشمال
         const moveDx=e.clientX-spaceLastX;
         if(Math.abs(moveDx)>=10){
           moveCursor(moveDx>0?1:-1);
@@ -322,9 +305,8 @@ function attachEvents(){
         if(spaceActive){
           spaceActive=false;
           isTrackpadActive=false;
-          showToast("✓ تراك باد");
         } else {
-          if(!spaceMoved && Math.abs(e.clientX-spaceStartX)<10 && Math.abs(e.clientY-spaceStartY)<10){
+          if(!spaceMoved && Math.abs(e.clientX-spaceStartX)<10){
             if(spacePressed) return;
             spacePressed=true;
             if(!handleSpace()){ commit(" "); onCharTyped(" "); playSound(); }
@@ -344,25 +326,23 @@ function attachEvents(){
         isTrackpadActive=false;
         spacePointerId=null;
       }, {passive:true});
-
       k.addEventListener("touchstart", (e)=>{ e.preventDefault(); }, {passive:false});
       return;
     }
 
-    // باقي الزراير - pointer فقط
-    let startX=0,startY=0,moved=false,pointerId=null,handled=false;
+    let startX=0,moved=false,pointerId=null,handled=false;
     k.addEventListener("pointerdown", (e)=>{
       if(processingKey) return;
       e.preventDefault();
       k.setPointerCapture(e.pointerId);
       pointerId=e.pointerId;
-      startX=e.clientX; startY=e.clientY; moved=false; handled=false;
+      startX=e.clientX; moved=false; handled=false;
       k.classList.add("pressed");
     }, {passive:false});
 
     k.addEventListener("pointermove", (e)=>{
       if(e.pointerId!==pointerId) return;
-      if(Math.abs(e.clientX-startX)>10||Math.abs(e.clientY-startY)>10){ moved=true; k.classList.remove("pressed"); }
+      if(Math.abs(e.clientX-startX)>10){ moved=true; k.classList.remove("pressed"); }
     }, {passive:true});
 
     k.addEventListener("pointerup", (e)=>{
@@ -381,14 +361,12 @@ function attachEvents(){
           isMicListening=false;
           k.classList.remove("listening");
           document.getElementById("micBtn")?.classList.remove("listening","active");
-          showToast("🎤 إيقاف");
           return;
         }
-        if(!micEnabled){ showToast("🎤 مطفي"); return; }
+        if(!micEnabled){ return; }
         isMicListening=true;
         k.classList.add("listening");
         document.getElementById("micBtn")?.classList.add("listening","active");
-        showToast("🎤 اتكلم...");
         try{ if(window.Android&&Android.startVoiceInput) Android.startVoiceInput(); }catch(ex){ isMicListening=false; k.classList.remove("listening"); }
         setTimeout(()=>{ if(isMicListening){ isMicListening=false; k.classList.remove("listening"); document.getElementById("micBtn")?.classList.remove("listening","active"); } },8000);
         return;
@@ -399,7 +377,6 @@ function attachEvents(){
         if(nowFn-(window.lastFnTap||0)<350){
           if(numpadEnabled){
             numpadOverlay.classList.toggle("show");
-            showToast(numpadOverlay.classList.contains("show")?"🔢 45%":"🔢 مقفول");
           }
         }
         window.lastFnTap=nowFn;
@@ -411,8 +388,8 @@ function attachEvents(){
         if(kc===KC.ENTER){ commit("\n"); sendKey(kc); onCharTyped("\n"); return; }
         if(kc===KC.LEFT){ moveCursor(-1); return; }
         if(kc===KC.RIGHT){ moveCursor(1); return; }
-        if(kc>=KC.F1 && kc<=KC.F12){ sendKey(kc); showToast("F"+(kc-KC.F1+1)); return; }
-        if(kc===KC.ESC){ sendKey(kc); showToast("Esc"); return; }
+        if(kc>=KC.F1 && kc<=KC.F12){ sendKey(kc); return; }
+        if(kc===KC.ESC){ sendKey(kc); return; }
       }
       if(key==="shift"){isShift=!isShift;updateUI();return;}
       if(key==="caps"){isCaps=!isCaps;updateUI();return;}
@@ -432,7 +409,6 @@ function attachEvents(){
       k.classList.remove("pressed");
       if(e.pointerId===pointerId) pointerId=null;
     }, {passive:true});
-
     k.addEventListener("touchstart", (e)=>{ e.preventDefault(); }, {passive:false});
   });
 
@@ -448,25 +424,37 @@ document.getElementById("micBtn")?.addEventListener("click",function(){
     isMicListening=false;
     this.classList.remove("listening","active");
     document.querySelectorAll(".key.mic").forEach(k=>k.classList.remove("listening"));
-    showToast("🎤 إيقاف");
     return;
   }
-  if(!micEnabled){ showToast("🎤 مطفي"); return; }
+  if(!micEnabled){ return; }
   isMicListening=true;
   this.classList.add("listening","active");
   document.querySelectorAll(".key.mic").forEach(k=>k.classList.add("listening"));
-  showToast("🎤 اتكلم...");
   try{ if(window.Android&&Android.startVoiceInput) Android.startVoiceInput(); }catch(e){ isMicListening=false; this.classList.remove("listening","active"); }
   setTimeout(()=>{ if(isMicListening){ isMicListening=false; this.classList.remove("listening","active"); document.querySelectorAll(".key.mic").forEach(k=>k.classList.remove("listening")); } },8000);
 });
 document.getElementById("clipboardBtn")?.addEventListener("click",function(){ clipboardBar.classList.toggle("show"); updateClipboardBar(); this.classList.toggle("active", clipboardBar.classList.contains("show")); });
-document.getElementById("floatingBtn")?.addEventListener("click",function(){ isFloating=!isFloating; this.classList.toggle("active", isFloating); saveSet("floating", isFloating?"true":"false"); updateUI(); showToast(isFloating?"🪟 عائم":"🪟 عادي"); });
-document.querySelectorAll("#scaleOptions .option-btn").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll("#scaleOptions .option-btn").forEach(x=>x.classList.remove("active")); b.classList.add("active"); currentScale=b.dataset.scale; saveSet("scale",currentScale); updateUI(); showToast("🔍 "+currentScale);}));
+document.getElementById("floatingBtn")?.addEventListener("click",function(){ isFloating=!isFloating; this.classList.toggle("active", isFloating); saveSet("floating", isFloating?"true":"false"); updateUI(); });
+document.querySelectorAll("#langOptions .option-btn").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll("#langOptions .option-btn").forEach(x=>x.classList.remove("active")); b.classList.add("active"); currentLang=b.dataset.lang; saveSet("language",currentLang); renderKeyboard();}));
+document.querySelectorAll("#themeOptions .option-btn").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll("#themeOptions .option-btn").forEach(x=>x.classList.remove("active")); b.classList.add("active"); currentTheme=b.dataset.theme; saveSet("theme",currentTheme); updateUI();}));
+document.querySelectorAll("#soundOptions .option-btn").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll("#soundOptions .option-btn").forEach(x=>x.classList.remove("active")); b.classList.add("active"); currentSound=b.dataset.sound; soundEnabled=currentSound!=="off"; saveSet("sound",currentSound); saveSet("soundEnabled",soundEnabled?"true":"false"); updateUI(); playSound();}));
+document.querySelectorAll("#rgbOptions .option-btn").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll("#rgbOptions .option-btn").forEach(x=>x.classList.remove("active")); b.classList.add("active"); currentRGB=b.dataset.rgb; saveSet("rgb",currentRGB); updateUI();}));
+document.querySelectorAll("#scaleOptions .option-btn").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll("#scaleOptions .option-btn").forEach(x=>x.classList.remove("active")); b.classList.add("active"); currentScale=b.dataset.scale; saveSet("scale",currentScale); updateUI();}));
+document.getElementById("micToggle")?.addEventListener("click",function(){micEnabled=!micEnabled; this.textContent="🎤 مايك: "+(micEnabled?"مفعل":"مطفي"); this.classList.toggle("active",micEnabled); saveSet("mic",micEnabled?"true":"false");});
+document.getElementById("clipboardToggle")?.addEventListener("click",function(){const v=clipboardEnabled; clipboardEnabled=!v; this.textContent="📋 حافظة: "+(clipboardEnabled?"مفعلة":"مطفية"); this.classList.toggle("active",clipboardEnabled); saveSet("clipboard",clipboardEnabled?"true":"false");});
+document.getElementById("floatingToggle")?.addEventListener("click",function(){isFloating=!isFloating; this.textContent="🪟 عائم: "+(isFloating?"مفعل":"مطفي"); this.classList.toggle("active",isFloating); saveSet("floating",isFloating?"true":"false"); updateUI();});
 document.getElementById("numpadToggle")?.addEventListener("click",function(){numpadEnabled=!numpadEnabled; this.textContent="🔢 نمباد: "+(numpadEnabled?"مفعل":"مطفي"); this.classList.toggle("active",numpadEnabled); saveSet("numpad",numpadEnabled?"true":"false");});
 document.getElementById("vibToggle")?.addEventListener("click",function(){vibEnabled=!vibEnabled; this.textContent="📳 اهتزاز: "+(vibEnabled?"مفعل":"مطفي"); saveSet("vib",vibEnabled?"true":"false"); if(vibEnabled) vibrate();});
+document.getElementById("instrToggle")?.addEventListener("click",function(){showInstructions=!showInstructions; this.textContent="👁️ إرشادات: "+(showInstructions?"مفعلة":"مخفية"); this.classList.toggle("active",showInstructions); saveSet("instructions",showInstructions?"true":"false"); updateUI(); updateSuggestions();});
 document.getElementById("resetBtn")?.addEventListener("click",()=>{localStorage.clear(); location.reload();});
-currentLang=loadSet("language","ar"); currentScale=loadSet("scale","medium"); isFloating=loadSet("floating","false")==="true"; micEnabled=loadSet("mic","true")==="true";
+currentLang=loadSet("language","ar"); currentTheme=loadSet("theme","dark"); currentSound=loadSet("sound","clicky"); currentRGB=loadSet("rgb","reactive"); currentScale=loadSet("scale","medium"); isFloating=loadSet("floating","false")==="true"; micEnabled=loadSet("mic","true")==="true"; soundEnabled=loadSet("soundEnabled","true")==="true"; showInstructions=loadSet("instructions","false")==="true";
 document.querySelector('[data-lang="'+currentLang+'"]')?.classList.add("active");
+document.querySelector('[data-theme="'+currentTheme+'"]')?.classList.add("active");
+document.querySelector('[data-sound="'+currentSound+'"]')?.classList.add("active");
+document.querySelector('[data-rgb="'+currentRGB+'"]')?.classList.add("active");
 document.querySelector('[data-scale="'+currentScale+'"]')?.classList.add("active");
+document.getElementById("micToggle")?.classList.toggle("active", micEnabled);
+document.getElementById("instrToggle")?.classList.toggle("active", showInstructions);
+document.getElementById("instrToggle").textContent="👁️ إرشادات: "+(showInstructions?"مفعلة":"مخفية");
 renderKeyboard();
-console.log("v4.2 DELETE + TRACKPAD FIX - مسح لا يعلق, تراك باد سلس يمين شمال");
+console.log("v4.3 - مسح سريع 300ms/65ms, إعدادات كاملة, بدون إرشادات, تراك باد ليكويد جلاس شفاف");
